@@ -1,17 +1,7 @@
-/// Generic error category, suitable for all environments.
+/// Posix error category, suitable for all environments.
 ///
 /// In presence of OS, it means it identifies POSIX error codes.
-
-#[derive(Copy, Clone)]
-pub struct GenericCategory;
-
-impl GenericCategory {
-    #[inline]
-    ///Access static instance
-    pub fn new() -> Self {
-        Self
-    }
-}
+pub struct PosixCategory;
 
 pub fn get_last_error() -> i32 {
     #[cfg(not(any(target_os = "wasi", target_os = "unknown")))]
@@ -58,7 +48,7 @@ pub fn get_last_error() -> i32 {
     }
 }
 
-fn to_error(code: i32) -> alloc::borrow::Cow<'static, str> {
+pub fn to_error(code: i32) -> alloc::borrow::Cow<'static, str> {
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
@@ -96,15 +86,14 @@ fn to_error(code: i32) -> alloc::borrow::Cow<'static, str> {
         }
     }
 
-    alloc::borrow::Cow::Borrowed("Unknown error")
+    alloc::borrow::Cow::Borrowed(crate::UNKNOWN_ERROR)
 }
 
-impl crate::Category for GenericCategory {
-    fn name(&self) -> &'static str {
-        "Generic"
-    }
+impl crate::Category for PosixCategory {
+    const NAME: &'static str = "Posix error";
 
-    fn message(&self, code: i32) -> alloc::borrow::Cow<'_, str> {
+    #[inline]
+    fn message(code: i32) -> alloc::borrow::Cow<'static, str> {
         to_error(code)
     }
 }

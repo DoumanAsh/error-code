@@ -1,12 +1,25 @@
-pub use error_code::ErrorCode;
+pub use error_code::{SystemError, PlainError, PosixError};
 
 #[test]
 fn it_works() {
-    let error = ErrorCode::new_generic(11);
+    let error = PosixError::new(11);
     eprintln!("{}", error);
 
-    let error = ErrorCode::last_generic();
+    let error = PosixError::last();
     eprintln!("{}", error);
+
+    let error = PlainError::new(11);
+    eprintln!("{}", error);
+
+    let error = SystemError::new(13000);
+    eprintln!("{}", error);
+
+    let error = SystemError::last();
+    eprintln!("{}", error);
+
+    let error = PlainError::new(11);
+    eprintln!("{}", error);
+
 }
 
 #[cfg(feature = "ufmt")]
@@ -14,6 +27,6 @@ fn it_works() {
 fn it_works_ufmt() {
     ufmt_stdio::init();
 
-    let error = ErrorCode::new_generic(i32::max_value());
+    let error = PosixError::new(i32::max_value());
     ufmt_stdio::eprintln!("{}", error);
 }
