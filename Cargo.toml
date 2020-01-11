@@ -20,3 +20,6 @@ optional = true
 
 [dev-dependencies.ufmt-stdio]
 version = "0.1"
+
+[features]
+std = []

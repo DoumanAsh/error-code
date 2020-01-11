@@ -1,15 +1,15 @@
 /// Generic error category, suitable for all environments.
 ///
 /// In presence of OS, it means it identifies POSIX error codes.
-pub struct GenericCategory;
 
-static SELF: GenericCategory = GenericCategory;
+#[derive(Copy, Clone)]
+pub struct GenericCategory;
 
 impl GenericCategory {
     #[inline]
     ///Access static instance
-    pub fn new() -> &'static Self {
-        &SELF
+    pub fn new() -> Self {
+        Self
     }
 }
 

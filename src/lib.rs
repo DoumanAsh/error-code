@@ -6,6 +6,7 @@
 //!
 //! # Features
 //!
+//! - `std` - enables `std::error::Error` implementation
 //! - `ufmt` - enables `ufmt` formatting implementation
 //!
 //! # Categories
@@ -21,6 +22,8 @@
 #![warn(missing_docs)]
 
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 use core::fmt;
 
@@ -28,7 +31,7 @@ mod generic;
 pub use generic::GenericCategory;
 
 ///Describes category of Error, defining it's semantics.
-pub trait Category {
+pub trait Category: Clone + Copy {
     /// Returns name that describes the category.
     fn name(&self) -> &'static str;
 
@@ -36,22 +39,14 @@ pub trait Category {
     fn message(&self, code: i32) -> alloc::borrow::Cow<'_, str>;
 }
 
+#[derive(Clone, Copy)]
 ///Describes error code in particular category.
-pub struct ErrorCode {
+pub struct ErrorCode<C> {
     code: i32,
-    category: &'static dyn Category,
+    category: C,
 }
 
-impl ErrorCode {
-    #[inline]
-    ///Creates new error code in provided category.
-    pub fn new(code: i32, category: &'static dyn Category) -> Self {
-        Self {
-            code,
-            category,
-        }
-    }
-
+impl ErrorCode<GenericCategory> {
     #[inline]
     ///Creates new generic error code
     ///
@@ -67,14 +62,25 @@ impl ErrorCode {
     }
 }
 
-impl fmt::Debug for ErrorCode {
+impl<C: Category> ErrorCode<C> {
+    #[inline]
+    ///Creates new error code in provided category.
+    pub fn new(code: i32, category: C) -> Self {
+        Self {
+            code,
+            category,
+        }
+    }
+}
+
+impl<C: Category> fmt::Debug for ErrorCode<C> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} error {}: {}", self.category.name(), self.code, self.category.message(self.code))
     }
 }
 
-impl fmt::Display for ErrorCode {
+impl<C: Category> fmt::Display for ErrorCode<C> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         <Self as  core::fmt::Debug>::fmt(self, f)
@@ -82,7 +88,7 @@ impl fmt::Display for ErrorCode {
 }
 
 #[cfg(feature = "ufmt")]
-impl ufmt::uDebug for ErrorCode {
+impl<C: Category> ufmt::uDebug for ErrorCode<C> {
     fn fmt<W: ufmt::uWrite + ?Sized>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error> {
         f.write_str(self.category.name())?;
         f.write_str(" error ")?;
@@ -134,9 +140,12 @@ impl ufmt::uDebug for ErrorCode {
 }
 
 #[cfg(feature = "ufmt")]
-impl ufmt::uDisplay for ErrorCode {
+impl<C: Category> ufmt::uDisplay for ErrorCode<C> {
     #[inline]
     fn fmt<W: ufmt::uWrite + ?Sized>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error> {
         <Self as ufmt::uDebug>::fmt(self, f)
     }
 }
+
+#[cfg(feature = "std")]
+impl<C: Category> std::error::Error for ErrorCode<C> {}
