@@ -4,7 +4,7 @@
 //!
 //! # Requirements
 //!
-//! - `alloc` - Crate uses allocator to create dynamic message, when necessary.
+//! - `alloc` - Crate uses allocator to create dynamic message, when necessary (Only [System](struct.SystemCategory.html) category uses heap on Windows).
 //!
 //! # Features
 //!
