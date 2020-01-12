@@ -235,3 +235,7 @@ impl<C: Category> ufmt::uDisplay for ErrorCode<C> {
 
 #[cfg(feature = "std")]
 impl<C: Category> std::error::Error for ErrorCode<C> {}
+
+unsafe impl<C> Send for ErrorCode<C> {}
+unsafe impl<C> Sync for ErrorCode<C> {}
+impl<C> Unpin for ErrorCode<C> {}
