@@ -64,6 +64,18 @@ pub type SystemError = ErrorCode<SystemCategory>;
 ///Alias to Plain error code, without any extra category
 pub type PlainError = ErrorCode<()>;
 
+///Identifies object as error code, allowing for it to be converted with right [Category](trait.CateCategory.html)
+pub trait ErrorCodeEnum: Into<i32> {
+    ///Specifies category of error code.
+    type Category: Category;
+
+    #[inline]
+    ///Converts self into [ErrorCode](struct.ErrorCode.html)
+    fn error_code(self) -> ErrorCode<Self::Category> {
+        self.into().into()
+    }
+}
+
 ///Describes error code in particular category.
 pub struct ErrorCode<C> {
     code: i32,
