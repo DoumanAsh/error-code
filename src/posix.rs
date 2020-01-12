@@ -48,7 +48,7 @@ pub fn get_last_error() -> i32 {
     }
 }
 
-pub fn to_error(code: i32) -> alloc::borrow::Cow<'static, str> {
+pub fn to_error<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
@@ -93,7 +93,7 @@ impl crate::Category for PosixCategory {
     const NAME: &'static str = "Posix error";
 
     #[inline]
-    fn message(code: i32) -> alloc::borrow::Cow<'static, str> {
+    fn message<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
         to_error(code)
     }
 }

@@ -25,7 +25,7 @@ pub fn get_last_error() -> i32 {
 }
 
 #[cfg(windows)]
-pub fn to_error(code: i32) -> alloc::borrow::Cow<'static, str> {
+pub fn to_error<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
     const FORMAT_MESSAGE_ARGUMENT_ARRAY: u32 = 0x00002000;
     const FORMAT_MESSAGE_FROM_SYSTEM: u32 = 0x00001000;
     const FORMAT_MESSAGE_IGNORE_INSERTS: u32 = 0x00000200;
@@ -53,7 +53,7 @@ impl crate::Category for SystemCategory {
     const NAME: &'static str = "OS error";
 
     #[inline]
-    fn message(code: i32) -> alloc::borrow::Cow<'static, str> {
+    fn message<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
         to_error(code)
     }
 }

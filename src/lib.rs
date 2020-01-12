@@ -45,14 +45,14 @@ pub trait Category {
     const NAME: &'static str;
 
     /// Returns the explanatory text for the code.
-    fn message(code: i32) -> alloc::borrow::Cow<'static, str>;
+    fn message<'a>(code: i32) -> alloc::borrow::Cow<'a, str>;
 }
 
 impl Category for () {
     const NAME: &'static str = "Error code";
 
     #[inline(always)]
-    fn message(_: i32) -> alloc::borrow::Cow<'static, str> {
+    fn message<'a>(_: i32) -> alloc::borrow::Cow<'a, str> {
         alloc::borrow::Cow::Borrowed("")
     }
 }
