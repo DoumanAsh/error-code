@@ -23,3 +23,6 @@ version = "0.1"
 
 [features]
 std = []
+
+[package.metadata.docs.rs]
+features = ["std"]
