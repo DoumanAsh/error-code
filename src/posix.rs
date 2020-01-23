@@ -3,6 +3,18 @@
 /// In presence of OS, it means it identifies POSIX error codes.
 pub struct PosixCategory;
 
+#[cfg(target_os = "unknown")]
+#[inline(always)]
+pub fn is_would_block(_: i32) -> bool {
+    false
+}
+
+#[cfg(not(target_os = "unknown"))]
+#[inline]
+pub fn is_would_block(code: i32) -> bool {
+    code == libc::EWOULDBLOCK || code == libc::EAGAIN
+}
+
 pub fn get_last_error() -> i32 {
     #[cfg(not(any(target_os = "wasi", target_os = "unknown")))]
     {
@@ -48,7 +60,7 @@ pub fn get_last_error() -> i32 {
     }
 }
 
-pub fn to_error<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
+pub fn to_error<'a>(_code: i32) -> alloc::borrow::Cow<'a, str> {
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
@@ -71,7 +83,7 @@ pub fn to_error<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
     #[cfg(any(windows, unix))]
     {
         let err = unsafe {
-            strerror(code)
+            strerror(_code)
         };
 
         if !err.is_null() {

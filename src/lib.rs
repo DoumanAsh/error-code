@@ -108,7 +108,7 @@ impl ErrorCode<PosixCategory> {
     ///Under POSIX, it means either `EWOULDBLOCK` or `EAGAIN`, in some cases it can be the same
     ///error code.
     pub fn is_would_block(&self) -> bool {
-        self.code == libc::EWOULDBLOCK || self.code == libc::EAGAIN
+        posix::is_would_block(self.code)
     }
 }
 
@@ -135,7 +135,7 @@ impl ErrorCode<SystemCategory> {
         }
 
         //This is unlikely to happen, but who knows?
-        self.code == libc::EWOULDBLOCK || self.code == libc::EAGAIN
+        posix::is_would_block(self.code)
     }
 }
 
