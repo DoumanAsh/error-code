@@ -64,6 +64,19 @@ pub type SystemError = ErrorCode<SystemCategory>;
 ///Alias to Plain error code, without any extra category
 pub type PlainError = ErrorCode<()>;
 
+///Describes way to convert from one `Category` into another.
+pub trait IntoCategory<C: Category>: Category + Sized {
+    ///Converts error from category into own category.
+    fn map_code(code: ErrorCode<Self>) -> ErrorCode<C>;
+}
+
+impl IntoCategory<SystemCategory> for PosixCategory {
+    #[inline]
+    fn map_code(code: ErrorCode<Self>) -> ErrorCode<SystemCategory> {
+        ErrorCode::<SystemCategory>::new(code.raw_code())
+    }
+}
+
 ///Identifies object as error code, allowing for it to be converted with right [Category](trait.CateCategory.html)
 pub trait ErrorCodeEnum: Into<i32> {
     ///Specifies category of error code.
@@ -106,6 +119,20 @@ impl<C: Category> ErrorCode<C> {
             code,
             _category: PhantomData,
         }
+    }
+
+    #[inline]
+    ///Access raw integer code
+    pub fn raw_code(&self) -> i32 {
+        self.code
+    }
+
+    #[inline]
+    ///Converts self into error code of another category.
+    ///
+    ///Requires self's category to implement `IntoCategory` for destination category.
+    pub fn into_other<O: Category>(self) -> ErrorCode<O> where C: IntoCategory<O> {
+        C::map_code(self)
     }
 }
 
@@ -239,3 +266,4 @@ impl<C: Category> std::error::Error for ErrorCode<C> {}
 unsafe impl<C> Send for ErrorCode<C> {}
 unsafe impl<C> Sync for ErrorCode<C> {}
 impl<C> Unpin for ErrorCode<C> {}
+
