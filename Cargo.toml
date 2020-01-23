@@ -13,6 +13,10 @@ include = [
     "README.md"
 ]
 
+[dependencies.libc]
+version = "0.2"
+default-features = false
+
 [dependencies.ufmt]
 version = "0.1"
 default-features = true
