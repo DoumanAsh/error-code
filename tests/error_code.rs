@@ -27,6 +27,9 @@ fn it_works() {
 fn it_works_ufmt() {
     ufmt_stdio::init();
 
+    let error = PosixError::new(11);
+    ufmt_stdio::eprintln!("{}", error);
+
     let error = PosixError::new(i32::max_value());
     ufmt_stdio::eprintln!("{}", error);
 }

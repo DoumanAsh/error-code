@@ -2,10 +2,6 @@
 //!
 //! It's goal is to be able to provide simplified `Error` which would work in `no_std` environment
 //!
-//! # Requirements
-//!
-//! - `alloc` - Crate uses allocator to create dynamic message, when necessary (Only [System](struct.SystemCategory.html) category uses heap on Windows).
-//!
 //! # Features
 //!
 //! - `std` - enables `std::error::Error` implementation
@@ -24,15 +20,24 @@
 
 #![no_std]
 #![warn(missing_docs)]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
 
-extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
 const UNKNOWN_ERROR: &str = "Unknown error";
+#[allow(unused)]
+const FAIL_FORMAT: &str = "Failed to format OS Error";
 
 use core::fmt;
 use core::marker::PhantomData;
+
+mod buf;
+///Static string used to store error message.
+///
+///Limited to 255 characters, truncates on overflow.
+pub type Str = buf::StrBuf::<[u8; 255]>;
+pub use buf::StrBuf;
 
 mod posix;
 pub use posix::PosixCategory;
@@ -45,15 +50,15 @@ pub trait Category {
     const NAME: &'static str;
 
     /// Returns the explanatory text for the code.
-    fn message<'a>(code: i32) -> alloc::borrow::Cow<'a, str>;
+    fn message(code: i32) -> Str;
 }
 
 impl Category for () {
     const NAME: &'static str = "Error code";
 
     #[inline(always)]
-    fn message<'a>(_: i32) -> alloc::borrow::Cow<'a, str> {
-        alloc::borrow::Cow::Borrowed("")
+    fn message<'a>(_: i32) -> Str {
+        Str::new()
     }
 }
 
@@ -107,7 +112,7 @@ impl ErrorCode<PosixCategory> {
     ///
     ///Under POSIX, it means either `EWOULDBLOCK` or `EAGAIN`, in some cases it can be the same
     ///error code.
-    pub fn is_would_block(&self) -> bool {
+    pub fn is_would_block(self) -> bool {
         posix::is_would_block(self.code)
     }
 }
@@ -126,7 +131,7 @@ impl ErrorCode<SystemCategory> {
     ///Under POSIX, it means either `EWOULDBLOCK` or `EAGAIN`, in some cases it can be the same
     ///error code.
     ///In case of Windows, it is also `WSAEWOULDBLOCK`
-    pub fn is_would_block(&self) -> bool {
+    pub fn is_would_block(self) -> bool {
         #[cfg(windows)]
         {
             if self.code == 10035 {
@@ -151,7 +156,7 @@ impl<C: Category> ErrorCode<C> {
 
     #[inline]
     ///Access raw integer code
-    pub fn raw_code(&self) -> i32 {
+    pub fn raw_code(self) -> i32 {
         self.code
     }
 
@@ -245,6 +250,8 @@ impl<C: Category> ufmt::uDebug for ErrorCode<C> {
                         false
                     };
 
+                    f.write_str(" ")?;
+
                     let mut buffer = unsafe {
                         core::mem::MaybeUninit::<[u8; 12]>::uninit().assume_init()
                     };
@@ -276,7 +283,7 @@ impl<C: Category> ufmt::uDebug for ErrorCode<C> {
             }?
         }
 
-        f.write_str(&C::message(self.code))
+        f.write_str(C::message(self.code).as_str())
     }
 }
 

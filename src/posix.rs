@@ -60,7 +60,9 @@ pub fn get_last_error() -> i32 {
     }
 }
 
-pub fn to_error<'a>(_code: i32) -> alloc::borrow::Cow<'a, str> {
+pub fn to_error(_code: i32) -> crate::Str {
+    let mut res = crate::Str::new();
+
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
@@ -92,20 +94,23 @@ pub fn to_error<'a>(_code: i32) -> alloc::borrow::Cow<'a, str> {
             };
 
             match core::str::from_utf8(err_slice) {
-                Ok(res) => return res.into(),
-                Err(_) => (),
+                Ok(msg) => res.push_str(msg),
+                Err(_) => res.push_str(crate::FAIL_FORMAT),
             }
+
+            return res;
         }
     }
 
-    alloc::borrow::Cow::Borrowed(crate::UNKNOWN_ERROR)
+    res.push_str(crate::UNKNOWN_ERROR);
+    res
 }
 
 impl crate::Category for PosixCategory {
     const NAME: &'static str = "Posix error";
 
     #[inline]
-    fn message<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
+    fn message<'a>(code: i32) -> crate::Str {
         to_error(code)
     }
 }

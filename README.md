@@ -8,10 +8,6 @@ Alternative `Error` for Rust.
 
 It's goal is to be able to provide simplified `Error` which would work in `no_std` environment
 
-# Requirements
-
-- `alloc` - Crate uses allocator to create dynamic message, when necessary (Only `System` category uses heap on Windows).
-
 # Features
 
 - `std` - enables `std::error::Error` implementation

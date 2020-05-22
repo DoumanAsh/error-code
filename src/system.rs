@@ -25,13 +25,17 @@ pub fn get_last_error() -> i32 {
 }
 
 #[cfg(windows)]
-pub fn to_error<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
+#[inline(always)]
+pub fn to_error(code: i32) -> crate::Str {
+    use core::fmt::Write;
+
     const FORMAT_MESSAGE_ARGUMENT_ARRAY: u32 = 0x00002000;
     const FORMAT_MESSAGE_FROM_SYSTEM: u32 = 0x00001000;
     const FORMAT_MESSAGE_IGNORE_INSERTS: u32 = 0x00000200;
 
-    const BUF_SIZE: usize = 512;
+    const BUF_SIZE: usize = 256;
     const FMT_FLAGS: u32 = FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY;
+    let mut res = crate::Str::new();
     let mut buff: [u16; BUF_SIZE] = [0; BUF_SIZE];
 
     let num_chars: u32 = unsafe { FormatMessageW(FMT_FLAGS,
@@ -41,19 +45,27 @@ pub fn to_error<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
 
     if num_chars == 0 {
         match get_last_error() {
-            122 => alloc::string::String::from_utf16_lossy(&buff).into(), //Insufficient memory
-            _ => alloc::borrow::Cow::Borrowed(crate::UNKNOWN_ERROR),
+            //Insufficient memory
+            122 => for ch in core::char::decode_utf16(buff.iter().cloned()).map(|r| r.unwrap_or(core::char::REPLACEMENT_CHARACTER)) {
+                let _ = res.write_char(ch);
+            },
+            _ => res.push_str(crate::FAIL_FORMAT),
         }
     } else {
-        alloc::string::String::from_utf16_lossy(&buff[..num_chars as usize-2]).into()
+        let buff = &buff[..num_chars as usize-2];
+        for ch in core::char::decode_utf16(buff.iter().cloned()).map(|r| r.unwrap_or(core::char::REPLACEMENT_CHARACTER)) {
+            let _ = res.write_char(ch);
+        }
     }
+
+    res
 }
 
 impl crate::Category for SystemCategory {
     const NAME: &'static str = "OS error";
 
     #[inline]
-    fn message<'a>(code: i32) -> alloc::borrow::Cow<'a, str> {
+    fn message<'a>(code: i32) -> crate::Str {
         to_error(code)
     }
 }
