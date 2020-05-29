@@ -81,6 +81,13 @@ impl IntoCategory<SystemCategory> for PosixCategory {
     }
 }
 
+impl<T: Category> IntoCategory<T> for T {
+    #[inline(always)]
+    fn map_code(code: ErrorCode<Self>) -> ErrorCode<Self> {
+        code
+    }
+}
+
 ///Identifies object as error code, allowing for it to be converted with right [Category](trait.CateCategory.html)
 pub trait ErrorCodeEnum: Into<i32> {
     ///Specifies category of error code.
@@ -252,3 +259,20 @@ impl<C: Category> fmt::Display for ErrorCode<C> {
 unsafe impl<C> Send for ErrorCode<C> {}
 unsafe impl<C> Sync for ErrorCode<C> {}
 impl<C> Unpin for ErrorCode<C> {}
+
+#[cfg(feature = "std")]
+impl<C: Category> std::error::Error for ErrorCode<C> {}
+
+#[cfg(feature = "std")]
+impl From<ErrorCode<PosixCategory>> for std::io::Error {
+    fn from(err: ErrorCode<PosixCategory>) -> Self {
+        Self::from_raw_os_error(err.raw_code())
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<ErrorCode<SystemCategory>> for std::io::Error {
+    fn from(err: ErrorCode<SystemCategory>) -> Self {
+        Self::from_raw_os_error(err.raw_code())
+    }
+}
