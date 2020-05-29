@@ -45,4 +45,4 @@ jobs:
         cargo check --target wasm32-unknown-unknown
 
     - name: Test
-      run: cargo test --features ufmt --tests
+      run: cargo test --tests

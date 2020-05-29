@@ -5,7 +5,6 @@
 //! # Features
 //!
 //! - `std` - enables `std::error::Error` implementation
-//! - `ufmt` - enables `ufmt` formatting implementation
 //!
 //! # Categories
 //!
@@ -35,8 +34,8 @@ use core::marker::PhantomData;
 mod buf;
 ///Static string used to store error message.
 ///
-///Limited to 255 characters, truncates on overflow.
-pub type Str = buf::StrBuf::<[u8; 255]>;
+///Limited to 128 characters, truncates on overflow.
+pub type Str = buf::StrBuf::<[u8; 128]>;
 pub use buf::StrBuf;
 
 mod posix;
@@ -144,10 +143,10 @@ impl ErrorCode<SystemCategory> {
     }
 }
 
-impl<C: Category> ErrorCode<C> {
+impl<C> ErrorCode<C> {
     #[inline]
     ///Creates new error code in provided category.
-    pub fn new(code: i32) -> Self {
+    pub const fn new(code: i32) -> Self {
         Self {
             code,
             _category: PhantomData,
@@ -156,15 +155,31 @@ impl<C: Category> ErrorCode<C> {
 
     #[inline]
     ///Access raw integer code
-    pub fn raw_code(self) -> i32 {
+    pub const fn raw_code(self) -> i32 {
         self.code
+    }
+
+    #[inline]
+    ///Returns whether error code is zero.
+    ///
+    ///Commonly zero is indication of no error.
+    pub const fn is_zero(self) -> bool {
+        self.code == 0
+    }
+}
+
+impl<C: Category> ErrorCode<C> {
+    #[inline(always)]
+    ///Returns textual representation of the error code
+    pub fn message(self) -> Str {
+        C::message(self.code)
     }
 
     #[inline]
     ///Converts self into error code of another category.
     ///
     ///Requires self's category to implement `IntoCategory` for destination category.
-    pub fn into_other<O: Category>(self) -> ErrorCode<O> where C: IntoCategory<O> {
+    pub fn into_another<O: Category>(self) -> ErrorCode<O> where C: IntoCategory<O> {
         C::map_code(self)
     }
 }
@@ -223,82 +238,17 @@ impl<C> core::hash::Hash for ErrorCode<C> {
 impl<C: Category> fmt::Debug for ErrorCode<C> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}: {}", C::NAME, self.code, C::message(self.code))
+        write!(f, "{} {}", C::NAME, self.code)
     }
 }
 
 impl<C: Category> fmt::Display for ErrorCode<C> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        <Self as  core::fmt::Debug>::fmt(self, f)
+        write!(f, "{} {}: {}", C::NAME, self.code, self.message())
     }
 }
-
-#[cfg(feature = "ufmt")]
-impl<C: Category> ufmt::uDebug for ErrorCode<C> {
-    fn fmt<W: ufmt::uWrite + ?Sized>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error> {
-        f.write_str(C::NAME)?;
-
-        {
-            match self.code {
-                0 => f.write_str("0: "),
-                mut code => {
-                    let is_neg = if code < 0 {
-                        code = -code;
-                        true
-                    } else {
-                        false
-                    };
-
-                    f.write_str(" ")?;
-
-                    let mut buffer = unsafe {
-                        core::mem::MaybeUninit::<[u8; 12]>::uninit().assume_init()
-                    };
-                    let mut buffer_idx = 0;
-                    while code != 0 {
-                        let rem = code % 10;
-                        unsafe {
-                            *buffer.get_unchecked_mut(buffer_idx) = rem as u8 + b'0';
-                        }
-                        buffer_idx += 1;
-                        code = code / 10;
-                    }
-
-                    if is_neg {
-                        unsafe {
-                            *buffer.get_unchecked_mut(buffer_idx) = b'-';
-                        }
-                        buffer_idx += 1;
-                    }
-
-                    f.write_str(unsafe {
-                        let buffer = &mut buffer[..buffer_idx];
-                        buffer.reverse();
-                        core::str::from_utf8_unchecked(buffer)
-                    })?;
-
-                    f.write_str(": ")
-                },
-            }?
-        }
-
-        f.write_str(C::message(self.code).as_str())
-    }
-}
-
-#[cfg(feature = "ufmt")]
-impl<C: Category> ufmt::uDisplay for ErrorCode<C> {
-    #[inline]
-    fn fmt<W: ufmt::uWrite + ?Sized>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error> {
-        <Self as ufmt::uDebug>::fmt(self, f)
-    }
-}
-
-#[cfg(feature = "std")]
-impl<C: Category> std::error::Error for ErrorCode<C> {}
 
 unsafe impl<C> Send for ErrorCode<C> {}
 unsafe impl<C> Sync for ErrorCode<C> {}
 impl<C> Unpin for ErrorCode<C> {}
-

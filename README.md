@@ -11,7 +11,6 @@ It's goal is to be able to provide simplified `Error` which would work in `no_st
 # Features
 
 - `std` - enables `std::error::Error` implementation
-- `ufmt` - enables `ufmt` formatting implementation
 
 # Categories
 

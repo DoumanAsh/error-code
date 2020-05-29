@@ -16,7 +16,7 @@ pub fn is_would_block(code: i32) -> bool {
 }
 
 pub fn get_last_error() -> i32 {
-    #[cfg(not(any(target_os = "wasi", target_os = "unknown")))]
+    #[cfg(not(any(target_os = "wasi", target_os = "cloudabi", target_os = "unknown")))]
     {
         extern {
             #[cfg(not(target_os = "dragonfly"))]
@@ -35,7 +35,9 @@ pub fn get_last_error() -> i32 {
                        link_name = "__errno_location")]
             #[cfg_attr(target_os = "windows",
                        link_name = "_errno")]
-            fn errno_location() -> *mut i32;
+            #[cfg_attr(target_os = "windows",
+                       link_name = "_errno")]
+            fn errno_location() -> *mut libc::c_int;
         }
 
         return unsafe {
@@ -43,15 +45,25 @@ pub fn get_last_error() -> i32 {
         }
     }
 
-    #[cfg(target_os = "wasi")]
+    #[cfg(any(target_os = "cloudabi", target_os = "wasi"))]
     {
         extern {
             #[thread_local]
-            #[link_name = "errno"]
-            static mut libc_errno: i32;
+            static errno: i32;
         }
 
-        return libc_errno;
+        return errno;
+    }
+
+    #[cfg(target_os = "vxworks")]
+    {
+        extern "C" {
+            pub fn errnoGet() -> libc::c_int;
+        }
+
+        return unsafe {
+            errnoGet();
+        }
     }
 
     #[cfg(target_os = "unknown")]
@@ -60,7 +72,7 @@ pub fn get_last_error() -> i32 {
     }
 }
 
-pub fn to_error(_code: i32) -> crate::Str {
+pub fn to_error(code: i32) -> crate::Str {
     let mut res = crate::Str::new();
 
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
@@ -85,7 +97,7 @@ pub fn to_error(_code: i32) -> crate::Str {
     #[cfg(any(windows, unix))]
     {
         let err = unsafe {
-            strerror(_code)
+            strerror(code)
         };
 
         if !err.is_null() {
@@ -102,14 +114,18 @@ pub fn to_error(_code: i32) -> crate::Str {
         }
     }
 
-    res.push_str(crate::UNKNOWN_ERROR);
+    match code {
+        0 => res.push_str("operation successful"),
+        _ => res.push_str(crate::UNKNOWN_ERROR),
+    }
+
     res
 }
 
 impl crate::Category for PosixCategory {
     const NAME: &'static str = "Posix error";
 
-    #[inline]
+    #[inline(always)]
     fn message<'a>(code: i32) -> crate::Str {
         to_error(code)
     }
