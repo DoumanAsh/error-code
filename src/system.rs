@@ -73,7 +73,9 @@ pub fn to_error(code: i32) -> crate::Str {
         }
     }
 
-    res.truncate(res.as_str().trim_end().len() as u8);
+    unsafe {
+        res.truncate(res.as_str().trim_end().len() as u8);
+    }
 
     res
 }

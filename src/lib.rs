@@ -31,12 +31,10 @@ const FAIL_FORMAT: &str = "Failed to format OS Error";
 use core::fmt;
 use core::marker::PhantomData;
 
-mod buf;
 ///Static string used to store error message.
 ///
 ///Limited to 128 characters, truncates on overflow.
-pub type Str = buf::StrBuf::<[u8; 128]>;
-pub use buf::StrBuf;
+pub type Str = str_buf::StrBuf::<[u8; 128]>;
 
 mod posix;
 pub use posix::PosixCategory;

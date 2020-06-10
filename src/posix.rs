@@ -108,7 +108,7 @@ pub fn to_error(code: i32) -> crate::Str {
             match core::str::from_utf8(err_slice) {
                 Ok(msg) => res.push_str(msg),
                 Err(_) => res.push_str(crate::FAIL_FORMAT),
-            }
+            };
 
             return res;
         }
@@ -117,7 +117,7 @@ pub fn to_error(code: i32) -> crate::Str {
     match code {
         0 => res.push_str("operation successful"),
         _ => res.push_str(crate::UNKNOWN_ERROR),
-    }
+    };
 
     res
 }

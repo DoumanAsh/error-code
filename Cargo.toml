@@ -1,6 +1,6 @@
 [package]
 name = "error-code"
-version = "1.0.1"
+version = "2.0.0"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
 description = "Alternative Error for Rust"
@@ -12,6 +12,9 @@ include = [
     "Cargo.toml",
     "README.md"
 ]
+
+[dependencies]
+str-buf = "1"
 
 [dependencies.libc]
 version = "0.2"
