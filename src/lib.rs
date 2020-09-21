@@ -116,7 +116,7 @@ impl ErrorCode<PosixCategory> {
     ///
     ///Under POSIX, it means either `EWOULDBLOCK` or `EAGAIN`, in some cases it can be the same
     ///error code.
-    pub const fn is_would_block(self) -> bool {
+    pub fn is_would_block(self) -> bool {
         posix::is_would_block(self.code)
     }
 }
@@ -135,7 +135,7 @@ impl ErrorCode<SystemCategory> {
     ///Under POSIX, it means either `EWOULDBLOCK` or `EAGAIN`, in some cases it can be the same
     ///error code.
     ///In case of Windows, it is also `WSAEWOULDBLOCK`
-    pub const fn is_would_block(self) -> bool {
+    pub fn is_would_block(self) -> bool {
         #[cfg(windows)]
         {
             if self.code == 10035 {

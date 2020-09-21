@@ -1,6 +1,6 @@
 [package]
 name = "error-code"
-version = "2.0.1"
+version = "2.0.0"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
 description = "Alternative Error for Rust"
