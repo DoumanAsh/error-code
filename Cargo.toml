@@ -14,7 +14,7 @@ include = [
 ]
 
 [dependencies]
-str-buf = "1"
+str-buf = "2"
 
 [dependencies.libc]
 version = "0.2"

@@ -34,7 +34,7 @@ use core::marker::PhantomData;
 ///Static string used to store error message.
 ///
 ///Limited to 128 characters, truncates on overflow.
-pub type Str = str_buf::StrBuf::<[u8; 128]>;
+pub type Str = str_buf::StrBuf::<128>;
 
 mod posix;
 pub use posix::PosixCategory;
