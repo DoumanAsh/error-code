@@ -272,8 +272,28 @@ impl From<ErrorCode<PosixCategory>> for std::io::Error {
 }
 
 #[cfg(feature = "std")]
+impl From<std::io::Error> for ErrorCode<PosixCategory> {
+    fn from(err: std::io::Error) -> Self {
+        match err.raw_os_error() {
+            Some(err) => Self::new(err),
+            None => Self::new(-1),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
 impl From<ErrorCode<SystemCategory>> for std::io::Error {
     fn from(err: ErrorCode<SystemCategory>) -> Self {
         Self::from_raw_os_error(err.raw_code())
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<std::io::Error> for ErrorCode<SystemCategory> {
+    fn from(err: std::io::Error) -> Self {
+        match err.raw_os_error() {
+            Some(err) => Self::new(err),
+            None => Self::new(-1),
+        }
     }
 }

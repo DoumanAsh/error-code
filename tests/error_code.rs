@@ -24,3 +24,18 @@ fn it_works() {
     let error = SystemError::unimplemented();
     eprintln!("{:?}", error.to_string());
 }
+
+#[cfg(feature = "std")]
+#[test]
+fn convert_io_error() {
+    use std::io::{ErrorKind, Error};
+    let code = SystemError::unimplemented();
+    let error: Error = code.into();
+    assert!(error.raw_os_error().is_some());
+    let code2: SystemError = error.into();
+    assert_eq!(code, code2);
+
+    let error = Error::new(ErrorKind::Other, "lolka");
+    let code: SystemError = error.into();
+    assert_eq!(code.raw_code(), -1);
+}
