@@ -20,4 +20,7 @@ fn it_works() {
 
     let error = PlainError::new(11);
     eprintln!("{}", error);
+
+    let error = SystemError::unimplemented();
+    eprintln!("{:?}", error.to_string());
 }

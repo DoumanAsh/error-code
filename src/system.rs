@@ -49,7 +49,7 @@ pub fn to_error(code: i32) -> crate::Str {
             122 => num_chars = BUF_SIZE as u32,
             //System cannot find specified error code
             317 => {
-                res.push_str(crate::UNKNOWN_ERROR);
+                crate::posix::write_error(code, &mut res);
                 return res;
             },
             _ => {

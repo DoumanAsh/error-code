@@ -15,6 +15,18 @@ pub fn is_would_block(code: i32) -> bool {
     code == libc::EWOULDBLOCK || code == libc::EAGAIN
 }
 
+pub fn get_unimplemented_error() -> i32 {
+    #[cfg(any(windows, unix, target_os = "wasi"))]
+    {
+        libc::ENOSYS
+    }
+    #[cfg(not(any(windows, unix, target_os = "wasi")))]
+    {
+        0
+    }
+
+}
+
 pub fn get_last_error() -> i32 {
     #[cfg(not(any(target_os = "wasi", target_os = "cloudabi", target_os = "unknown")))]
     {
@@ -72,9 +84,7 @@ pub fn get_last_error() -> i32 {
     }
 }
 
-pub fn to_error(code: i32) -> crate::Str {
-    let mut res = crate::Str::new();
-
+pub fn write_error(code: i32, res: &mut crate::Str) {
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
@@ -110,7 +120,7 @@ pub fn to_error(code: i32) -> crate::Str {
                 Err(_) => res.push_str(crate::FAIL_FORMAT),
             };
 
-            return res;
+            return;
         }
     }
 
@@ -118,7 +128,11 @@ pub fn to_error(code: i32) -> crate::Str {
         0 => res.push_str("operation successful"),
         _ => res.push_str(crate::UNKNOWN_ERROR),
     };
+}
 
+pub fn to_error(code: i32) -> crate::Str {
+    let mut res = crate::Str::new();
+    write_error(code, &mut res);
     res
 }
 

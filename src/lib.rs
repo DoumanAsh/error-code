@@ -112,6 +112,12 @@ impl ErrorCode<PosixCategory> {
     }
 
     #[inline]
+    ///Creates `unimplemented` error
+    pub fn unimplemented() -> Self {
+        Self::new(posix::get_unimplemented_error())
+    }
+
+    #[inline]
     ///Returns whether underlying error means to try again.
     ///
     ///Under POSIX, it means either `EWOULDBLOCK` or `EAGAIN`, in some cases it can be the same
@@ -128,6 +134,11 @@ impl ErrorCode<SystemCategory> {
         Self::new(system::get_last_error())
     }
 
+    #[inline]
+    ///Creates `unimplemented` error
+    pub fn unimplemented() -> Self {
+        Self::new(posix::get_unimplemented_error())
+    }
 
     #[inline]
     ///Returns whether underlying error means to try again.
