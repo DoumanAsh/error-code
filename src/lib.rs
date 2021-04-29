@@ -282,6 +282,17 @@ impl From<std::io::Error> for ErrorCode<PosixCategory> {
 }
 
 #[cfg(feature = "std")]
+impl PartialEq<std::io::Error> for ErrorCode<PosixCategory> {
+    fn eq(&self, other: &std::io::Error) -> bool {
+        if let Some(other) = other.raw_os_error() {
+            self.code == other
+        } else {
+            false
+        }
+    }
+}
+
+#[cfg(feature = "std")]
 impl From<ErrorCode<SystemCategory>> for std::io::Error {
     fn from(err: ErrorCode<SystemCategory>) -> Self {
         Self::from_raw_os_error(err.raw_code())
@@ -294,6 +305,17 @@ impl From<std::io::Error> for ErrorCode<SystemCategory> {
         match err.raw_os_error() {
             Some(err) => Self::new(err),
             None => Self::new(-1),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl PartialEq<std::io::Error> for ErrorCode<SystemCategory> {
+    fn eq(&self, other: &std::io::Error) -> bool {
+        if let Some(other) = other.raw_os_error() {
+            self.code == other
+        } else {
+            false
         }
     }
 }

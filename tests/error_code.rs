@@ -31,6 +31,7 @@ fn convert_io_error() {
     use std::io::{ErrorKind, Error};
     let code = SystemError::unimplemented();
     let error: Error = code.into();
+    assert_eq!(code, error);
     assert!(error.raw_os_error().is_some());
     let code2: SystemError = error.into();
     assert_eq!(code, code2);
@@ -38,4 +39,5 @@ fn convert_io_error() {
     let error = Error::new(ErrorKind::Other, "lolka");
     let code: SystemError = error.into();
     assert_eq!(code.raw_code(), -1);
+    assert_ne!(code, Error::new(ErrorKind::Other, "lolka"));
 }
