@@ -137,7 +137,7 @@ impl ErrorCode<SystemCategory> {
     #[inline]
     ///Creates `unimplemented` error
     pub fn unimplemented() -> Self {
-        Self::new(posix::get_unimplemented_error())
+        Self::new(system::get_unimplemented_error())
     }
 
     #[inline]

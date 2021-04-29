@@ -8,7 +8,7 @@ pub struct SystemCategory;
 #[cfg(not(windows))]
 use crate::posix::to_error;
 #[cfg(not(windows))]
-pub use crate::posix::get_last_error;
+pub use crate::posix::{get_unimplemented_error, get_last_error};
 
 #[cfg(windows)]
 extern "system" {
@@ -22,6 +22,13 @@ pub fn get_last_error() -> i32 {
     unsafe {
         GetLastError() as i32
     }
+}
+
+#[cfg(windows)]
+#[inline]
+pub fn get_unimplemented_error() -> i32 {
+    //ERROR_INVALID_FUNCTION
+    1
 }
 
 #[cfg(windows)]
