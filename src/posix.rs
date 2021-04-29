@@ -5,17 +5,17 @@ pub struct PosixCategory;
 
 #[cfg(target_os = "unknown")]
 #[inline(always)]
-pub fn is_would_block(_: i32) -> bool {
+pub const fn is_would_block(_: i32) -> bool {
     false
 }
 
 #[cfg(not(target_os = "unknown"))]
 #[inline]
-pub fn is_would_block(code: i32) -> bool {
+pub const fn is_would_block(code: i32) -> bool {
     code == libc::EWOULDBLOCK || code == libc::EAGAIN
 }
 
-pub fn get_unimplemented_error() -> i32 {
+pub const fn get_unimplemented_error() -> i32 {
     #[cfg(any(windows, unix, target_os = "wasi"))]
     {
         libc::ENOSYS
