@@ -1,6 +1,6 @@
 [package]
 name = "error-code"
-version = "2.2.0"
+version = "2.3.0"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
 description = "Alternative Error for Rust"
@@ -14,7 +14,7 @@ include = [
 ]
 
 [dependencies]
-str-buf = "2"
+str-buf = "1"
 
 [dependencies.libc]
 version = "0.2"
