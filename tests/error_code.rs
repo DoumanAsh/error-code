@@ -22,6 +22,7 @@ fn it_works() {
     eprintln!("{}", error);
 
     let error = SystemError::unimplemented();
+    eprintln!("{:?}", error);
     eprintln!("{:?}", error.to_string());
 }
 

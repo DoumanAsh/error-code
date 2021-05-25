@@ -217,6 +217,7 @@ impl<C> Clone for ErrorCode<C> {
 impl<C> Copy for ErrorCode<C> {}
 
 impl<C> PartialEq for ErrorCode<C> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.code == other.code
     }
@@ -238,6 +239,7 @@ impl<C> Ord for ErrorCode<C> {
 impl<C> Eq for ErrorCode<C> {}
 
 impl<C> core::hash::Hash for ErrorCode<C> {
+    #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.code.hash(state);
     }
@@ -266,6 +268,7 @@ impl<C: Category> std::error::Error for ErrorCode<C> {}
 
 #[cfg(feature = "std")]
 impl From<ErrorCode<PosixCategory>> for std::io::Error {
+    #[inline]
     fn from(err: ErrorCode<PosixCategory>) -> Self {
         Self::from_raw_os_error(err.raw_code())
     }
@@ -273,6 +276,7 @@ impl From<ErrorCode<PosixCategory>> for std::io::Error {
 
 #[cfg(feature = "std")]
 impl From<std::io::Error> for ErrorCode<PosixCategory> {
+    #[inline]
     fn from(err: std::io::Error) -> Self {
         match err.raw_os_error() {
             Some(err) => Self::new(err),
@@ -283,6 +287,7 @@ impl From<std::io::Error> for ErrorCode<PosixCategory> {
 
 #[cfg(feature = "std")]
 impl PartialEq<std::io::Error> for ErrorCode<PosixCategory> {
+    #[inline]
     fn eq(&self, other: &std::io::Error) -> bool {
         if let Some(other) = other.raw_os_error() {
             self.code == other
@@ -294,6 +299,7 @@ impl PartialEq<std::io::Error> for ErrorCode<PosixCategory> {
 
 #[cfg(feature = "std")]
 impl From<ErrorCode<SystemCategory>> for std::io::Error {
+    #[inline]
     fn from(err: ErrorCode<SystemCategory>) -> Self {
         Self::from_raw_os_error(err.raw_code())
     }
@@ -301,6 +307,7 @@ impl From<ErrorCode<SystemCategory>> for std::io::Error {
 
 #[cfg(feature = "std")]
 impl From<std::io::Error> for ErrorCode<SystemCategory> {
+    #[inline]
     fn from(err: std::io::Error) -> Self {
         match err.raw_os_error() {
             Some(err) => Self::new(err),
@@ -311,6 +318,7 @@ impl From<std::io::Error> for ErrorCode<SystemCategory> {
 
 #[cfg(feature = "std")]
 impl PartialEq<std::io::Error> for ErrorCode<SystemCategory> {
+    #[inline]
     fn eq(&self, other: &std::io::Error) -> bool {
         if let Some(other) = other.raw_os_error() {
             self.code == other
