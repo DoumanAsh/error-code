@@ -98,6 +98,7 @@ pub trait ErrorCodeEnum: Into<i32> {
     }
 }
 
+#[repr(transparent)]
 ///Describes error code in particular category.
 pub struct ErrorCode<C> {
     code: i32,

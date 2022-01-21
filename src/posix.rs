@@ -47,8 +47,6 @@ pub fn get_last_error() -> i32 {
                        link_name = "__errno_location")]
             #[cfg_attr(target_os = "windows",
                        link_name = "_errno")]
-            #[cfg_attr(target_os = "windows",
-                       link_name = "_errno")]
             fn errno_location() -> *mut libc::c_int;
         }
 
