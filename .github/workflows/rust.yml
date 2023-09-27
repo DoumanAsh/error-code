@@ -1,6 +1,23 @@
 name: Rust
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/rust.yml'
+      - 'src/**.rs'
+      - 'tests/**'
+      - 'Cargo.toml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - '**'
+    paths:
+      - '.github/workflows/rust.yml'
+      - 'src/**.rs'
+      - 'tests/**'
+      - 'Cargo.toml'
 
 jobs:
   build:
@@ -39,6 +56,12 @@ jobs:
         cargo --version
         rustc --version
 
+    - name: Install Valgrind
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y valgrind
+
     - name: Check WASM
       run: |
         rustup target add wasm32-unknown-unknown
@@ -46,3 +69,9 @@ jobs:
 
     - name: Test
       run: cargo test --tests
+
+    - name: Valgrind Test
+      if: runner.os == 'Linux'
+      env:
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER: "valgrind --leak-check=full --error-exitcode=1"
+      run: cargo test --release

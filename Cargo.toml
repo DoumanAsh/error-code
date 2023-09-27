@@ -1,9 +1,9 @@
 [package]
 name = "error-code"
-version = "2.3.1"
+version = "3.0.0-beta.1"
 authors = ["Douman <douman@gmx.se>"]
 edition = "2018"
-description = "Alternative Error for Rust"
+description = "Error code"
 license = "BSL-1.0"
 repository = "https://github.com/DoumanAsh/error-code"
 readme = "README.md"
@@ -12,13 +12,6 @@ include = [
     "Cargo.toml",
     "README.md"
 ]
-
-[dependencies]
-str-buf = "1"
-
-[dependencies.libc]
-version = "0.2"
-default-features = false
 
 [features]
 std = []

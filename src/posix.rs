@@ -1,53 +1,49 @@
+use crate::{Category, MessageBuf, ErrorCode};
+
+use core::{ptr, ffi, str};
+
 /// Posix error category, suitable for all environments.
 ///
 /// In presence of OS, it means it identifies POSIX error codes.
-pub struct PosixCategory;
+pub static POSIX_CATEGORY: Category = Category {
+    name: "PosixError",
+    message,
+    equivalent
+};
 
-#[cfg(target_os = "unknown")]
-#[inline(always)]
-pub const fn is_would_block(_: i32) -> bool {
-    false
+fn equivalent(code: ffi::c_int, other: &ErrorCode) -> bool {
+    ptr::eq(&POSIX_CATEGORY, other.category()) && code == other.raw_code()
 }
 
-#[cfg(not(target_os = "unknown"))]
-#[inline]
-pub const fn is_would_block(code: i32) -> bool {
-    code == libc::EWOULDBLOCK || code == libc::EAGAIN
-}
-
-pub const fn get_unimplemented_error() -> i32 {
-    #[cfg(any(windows, unix, target_os = "wasi"))]
-    {
-        libc::ENOSYS
-    }
-    #[cfg(not(any(windows, unix, target_os = "wasi")))]
-    {
-        0
-    }
-
-}
-
-pub fn get_last_error() -> i32 {
+pub(crate) fn get_last_error() -> ffi::c_int {
     #[cfg(not(any(target_os = "wasi", target_os = "cloudabi", target_os = "unknown")))]
     {
         extern {
             #[cfg(not(target_os = "dragonfly"))]
-            #[cfg_attr(any(target_os = "macos",
-                           target_os = "ios",
-                           target_os = "freebsd"),
-                       link_name = "__error")]
-            #[cfg_attr(any(target_os = "openbsd",
-                           target_os = "netbsd",
-                           target_os = "bitrig",
-                           target_os = "android"),
-                       link_name = "__errno")]
-            #[cfg_attr(target_os = "solaris",
-                       link_name = "___errno")]
-            #[cfg_attr(target_os = "linux",
-                       link_name = "__errno_location")]
-            #[cfg_attr(target_os = "windows",
-                       link_name = "_errno")]
-            fn errno_location() -> *mut libc::c_int;
+            #[cfg_attr(any(target_os = "macos", target_os = "ios", target_os = "freebsd"), link_name = "__error")]
+            #[cfg_attr(
+                any(
+                    target_os = "openbsd",
+                    target_os = "netbsd",
+                    target_os = "bitrig",
+                    target_os = "android",
+                    target_os = "espidf"
+                ),
+                link_name = "__errno"
+            )]
+            #[cfg_attr(
+                any(target_os = "solaris", target_os = "illumos"),
+                link_name = "___errno"
+            )]
+            #[cfg_attr(target_os = "haiku", link_name = "_errnop")]
+            #[cfg_attr(
+                any(target_os = "linux", target_os = "hurd", target_os = "redox"),
+                link_name = "__errno_location"
+            )]
+            #[cfg_attr(target_os = "aix", link_name = "_Errno")]
+            #[cfg_attr(target_os = "nto", link_name = "__get_errno_ptr")]
+            #[cfg_attr(target_os = "windows", link_name = "_errno")]
+            fn errno_location() -> *mut ffi::c_int;
         }
 
         return unsafe {
@@ -59,7 +55,7 @@ pub fn get_last_error() -> i32 {
     {
         extern {
             #[thread_local]
-            static errno: i32;
+            static errno: ffi::c_int;
         }
 
         return errno;
@@ -68,7 +64,7 @@ pub fn get_last_error() -> i32 {
     #[cfg(target_os = "vxworks")]
     {
         extern "C" {
-            pub fn errnoGet() -> libc::c_int;
+            pub fn errnoGet() -> ffi::c_int;
         }
 
         return unsafe {
@@ -82,63 +78,47 @@ pub fn get_last_error() -> i32 {
     }
 }
 
-pub fn write_error(code: i32, res: &mut crate::Str) {
+pub(crate) fn message(_code: ffi::c_int, _out: &mut MessageBuf) -> &str {
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
-        fn strerror(code: i32) -> *const i8;
+        fn strerror(code: ffi::c_int) -> *const i8;
         fn strlen(text: *const i8) -> usize;
     }
 
     #[cfg(all(unix, target_env = "gnu"))]
     extern "C" {
-        fn strerror_l(code: i32, locale: *mut i8) -> *const i8;
+        fn strerror_l(code: ffi::c_int, locale: *mut i8) -> *const i8;
         fn strlen(text: *const i8) -> usize;
     }
 
     #[cfg(all(unix, target_env = "gnu"))]
     #[inline]
-    unsafe fn strerror(code: i32) -> *const i8 {
-        strerror_l(code, core::ptr::null_mut())
+    unsafe fn strerror(code: ffi::c_int) -> *const i8 {
+        strerror_l(code, ptr::null_mut())
     }
 
     #[cfg(any(windows, unix))]
     {
         let err = unsafe {
-            strerror(code)
+            strerror(_code)
         };
 
         if !err.is_null() {
+            let err_len = unsafe {
+                strlen(err)
+            };
             let err_slice = unsafe {
-                core::slice::from_raw_parts(err as *const u8, strlen(err))
+                ptr::copy_nonoverlapping(err as *const u8, _out.as_mut_ptr() as *mut u8, err_len);
+                core::slice::from_raw_parts(_out.as_ptr() as *const u8, err_len)
             };
 
-            match core::str::from_utf8(err_slice) {
-                Ok(msg) => res.push_str(msg),
-                Err(_) => res.push_str(crate::FAIL_FORMAT),
+            match str::from_utf8(err_slice) {
+                Ok(msg) => return msg,
+                Err(_) => return crate::FAIL_ERROR_FORMAT,
             };
-
-            return;
         }
     }
 
-    match code {
-        0 => res.push_str("operation successful"),
-        _ => res.push_str(crate::UNKNOWN_ERROR),
-    };
-}
-
-pub fn to_error(code: i32) -> crate::Str {
-    let mut res = crate::Str::new();
-    write_error(code, &mut res);
-    res
-}
-
-impl crate::Category for PosixCategory {
-    const NAME: &'static str = "Posix error";
-
-    #[inline(always)]
-    fn message<'a>(code: i32) -> crate::Str {
-        to_error(code)
-    }
+    crate::UNKNOWN_ERROR
 }
