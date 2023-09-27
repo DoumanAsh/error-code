@@ -1,5 +1,7 @@
 //! Error code
 //!
+//! ## Usage
+//!
 //! ```rust
 //! use error_code::ErrorCode;
 //!
@@ -58,6 +60,10 @@ pub struct Category {
     ///Generally error code is equal if it belongs to the same category (use `ptr::eq` to compare
     ///pointers to `Category`) and raw error codes are equal.
     pub equivalent: fn(ffi::c_int, &ErrorCode) -> bool,
+    ///Returns `true` if supplied error code indicates WouldBlock like error.
+    ///
+    ///This should `true` only for errors that indicate operation can be re-tried later.
+    pub is_would_block: fn(ffi::c_int) -> bool,
 }
 
 #[derive(Copy, Clone)]
@@ -111,6 +117,12 @@ impl ErrorCode {
     ///Gets reference to underlying Category.
     pub const fn category(&self) -> &'static Category {
         self.category
+    }
+
+    #[inline(always)]
+    ///Returns `true` if underlying error indicates operation can or should be re-tried at later date.
+    pub fn is_would_block(&self) -> bool {
+        (self.category.is_would_block)(self.code)
     }
 }
 

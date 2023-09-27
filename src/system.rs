@@ -1,6 +1,6 @@
 use crate::{Category, ErrorCode};
 #[cfg(not(windows))]
-use crate::posix::message;
+use crate::posix::{message, is_would_block};
 #[cfg(not(windows))]
 pub(crate) use crate::posix::get_last_error;
 
@@ -14,7 +14,8 @@ use core::{ptr, ffi};
 pub static SYSTEM_CATEGORY: Category = Category {
     name: "OSError",
     message,
-    equivalent
+    equivalent,
+    is_would_block,
 };
 
 fn equivalent(code: ffi::c_int, other: &ErrorCode) -> bool {
@@ -86,6 +87,12 @@ fn message(code: ffi::c_int, out: &mut crate::MessageBuf) -> &str {
             }
         }
     }
+}
+
+#[cfg(windows)]
+#[inline]
+const fn is_would_block(code: ffi::c_int) -> bool {
+    code == 10035 || crate::posix::is_would_block(code)
 }
 
 #[cfg(windows)]

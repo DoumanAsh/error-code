@@ -8,7 +8,8 @@ use core::{ptr, ffi, str};
 pub static POSIX_CATEGORY: Category = Category {
     name: "PosixError",
     message,
-    equivalent
+    equivalent,
+    is_would_block,
 };
 
 fn equivalent(code: ffi::c_int, other: &ErrorCode) -> bool {
@@ -121,4 +122,14 @@ pub(crate) fn message(_code: ffi::c_int, _out: &mut MessageBuf) -> &str {
     }
 
     crate::UNKNOWN_ERROR
+}
+
+#[cfg(not(any(windows, unix)))]
+const fn is_would_block(_: ffi::c_int) -> bool {
+    false
+}
+
+#[cfg(any(windows, unix))]
+pub(crate) const fn is_would_block(code: ffi::c_int) -> bool {
+    code == libc::EWOULDBLOCK || code == libc::EAGAIN
 }
