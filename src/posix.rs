@@ -1,4 +1,5 @@
 use crate::{Category, MessageBuf, ErrorCode};
+use crate::utils::write_message_buf;
 
 use core::{ptr, ffi, str};
 
@@ -79,7 +80,7 @@ pub(crate) fn get_last_error() -> ffi::c_int {
     }
 }
 
-pub(crate) fn message(_code: ffi::c_int, _out: &mut MessageBuf) -> &str {
+pub(crate) fn message(code: ffi::c_int, out: &mut MessageBuf) -> &str {
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
@@ -102,26 +103,29 @@ pub(crate) fn message(_code: ffi::c_int, _out: &mut MessageBuf) -> &str {
     #[cfg(any(windows, unix))]
     {
         let err = unsafe {
-            strerror(_code)
+            strerror(code)
         };
 
         if !err.is_null() {
             let err_len = unsafe {
                 strlen(err)
             };
+
+            debug_assert!(out.len() >= err_len);
+
             let err_slice = unsafe {
-                ptr::copy_nonoverlapping(err as *const u8, _out.as_mut_ptr() as *mut u8, err_len);
-                core::slice::from_raw_parts(_out.as_ptr() as *const u8, err_len)
+                ptr::copy_nonoverlapping(err as *const u8, out.as_mut_ptr() as *mut u8, err_len);
+                core::slice::from_raw_parts(out.as_ptr() as *const u8, err_len)
             };
 
             match str::from_utf8(err_slice) {
                 Ok(msg) => return msg,
-                Err(_) => return crate::FAIL_ERROR_FORMAT,
+                Err(_) => return write_message_buf(out, crate::FAIL_ERROR_FORMAT),
             };
         }
     }
 
-    crate::UNKNOWN_ERROR
+    write_message_buf(out, crate::UNKNOWN_ERROR)
 }
 
 #[cfg(not(any(windows, unix)))]

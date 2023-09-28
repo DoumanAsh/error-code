@@ -52,7 +52,7 @@ fn message(code: ffi::c_int, out: &mut crate::MessageBuf) -> &str {
             122 => len = buff.len() as u32,
             //System cannot find specified error code
             317 => return crate::posix::message(code, out),
-            _ => return crate::FAIL_ERROR_FORMAT
+            _ => return crate::utils::write_message_buf(out, crate::FAIL_ERROR_FORMAT),
         }
     }
 
@@ -65,8 +65,8 @@ fn message(code: ffi::c_int, out: &mut crate::MessageBuf) -> &str {
 
     match res {
         0 => match get_last_error() {
-            122 => "<Truncated>",
-            _ => crate::FAIL_ERROR_FORMAT,
+            122 => crate::utils::write_message_buf(out, "<Truncated>"),
+            _ => crate::utils::write_message_buf(out, crate::FAIL_ERROR_FORMAT),
         }
         len => {
             let out = unsafe {
