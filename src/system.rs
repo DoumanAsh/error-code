@@ -91,7 +91,7 @@ fn message(code: libc::c_int, out: &mut crate::MessageBuf) -> &str {
 
 #[cfg(windows)]
 #[inline]
-const fn is_would_block(code: libc::c_int) -> bool {
+fn is_would_block(code: libc::c_int) -> bool {
     code == 10035 || crate::posix::is_would_block(code)
 }
 

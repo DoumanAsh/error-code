@@ -127,11 +127,11 @@ pub(crate) fn message(code: libc::c_int, out: &mut MessageBuf) -> &str {
 }
 
 #[cfg(not(any(windows, unix)))]
-pub(crate) const fn is_would_block(_: libc::c_int) -> bool {
+pub(crate) fn is_would_block(_: libc::c_int) -> bool {
     false
 }
 
 #[cfg(any(windows, unix))]
-pub(crate) const fn is_would_block(code: libc::c_int) -> bool {
+pub(crate) fn is_would_block(code: libc::c_int) -> bool {
     code == libc::EWOULDBLOCK || code == libc::EAGAIN
 }
