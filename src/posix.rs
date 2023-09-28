@@ -125,7 +125,7 @@ pub(crate) fn message(_code: ffi::c_int, _out: &mut MessageBuf) -> &str {
 }
 
 #[cfg(not(any(windows, unix)))]
-const fn is_would_block(_: ffi::c_int) -> bool {
+pub(crate) const fn is_would_block(_: ffi::c_int) -> bool {
     false
 }
 
