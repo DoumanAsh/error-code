@@ -1,7 +1,8 @@
 use crate::{Category, MessageBuf, ErrorCode};
 use crate::utils::write_message_buf;
+use crate::types::c_int;
 
-use core::{cmp, ptr, str};
+use core::{ptr, str};
 
 /// Posix error category, suitable for all environments.
 ///
@@ -13,11 +14,11 @@ pub static POSIX_CATEGORY: Category = Category {
     is_would_block,
 };
 
-fn equivalent(code: libc::c_int, other: &ErrorCode) -> bool {
+fn equivalent(code: c_int, other: &ErrorCode) -> bool {
     ptr::eq(&POSIX_CATEGORY, other.category()) && code == other.raw_code()
 }
 
-pub(crate) fn get_last_error() -> libc::c_int {
+pub(crate) fn get_last_error() -> c_int {
     #[cfg(not(any(target_os = "wasi", target_os = "cloudabi", target_os = "unknown")))]
     {
         extern {
@@ -45,7 +46,7 @@ pub(crate) fn get_last_error() -> libc::c_int {
             #[cfg_attr(target_os = "aix", link_name = "_Errno")]
             #[cfg_attr(target_os = "nto", link_name = "__get_errno_ptr")]
             #[cfg_attr(target_os = "windows", link_name = "_errno")]
-            fn errno_location() -> *mut libc::c_int;
+            fn errno_location() -> *mut c_int;
         }
 
         return unsafe {
@@ -57,7 +58,7 @@ pub(crate) fn get_last_error() -> libc::c_int {
     {
         extern {
             #[thread_local]
-            static errno: libc::c_int;
+            static errno: c_int;
         }
 
         return errno;
@@ -66,7 +67,7 @@ pub(crate) fn get_last_error() -> libc::c_int {
     #[cfg(target_os = "vxworks")]
     {
         extern "C" {
-            pub fn errnoGet() -> libc::c_int;
+            pub fn errnoGet() -> c_int;
         }
 
         return unsafe {
@@ -80,35 +81,35 @@ pub(crate) fn get_last_error() -> libc::c_int {
     }
 }
 
-pub(crate) fn message(code: libc::c_int, out: &mut MessageBuf) -> &str {
+pub(crate) fn message(_code: c_int, out: &mut MessageBuf) -> &str {
     #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
-        fn strerror(code: libc::c_int) -> *const i8;
+        fn strerror(code: c_int) -> *const i8;
         fn strlen(text: *const i8) -> usize;
     }
 
     #[cfg(all(unix, target_env = "gnu"))]
     extern "C" {
-        fn strerror_l(code: libc::c_int, locale: *mut i8) -> *const i8;
+        fn strerror_l(code: c_int, locale: *mut i8) -> *const i8;
         fn strlen(text: *const i8) -> usize;
     }
 
     #[cfg(all(unix, target_env = "gnu"))]
     #[inline]
-    unsafe fn strerror(code: libc::c_int) -> *const i8 {
+    unsafe fn strerror(code: c_int) -> *const i8 {
         strerror_l(code, ptr::null_mut())
     }
 
     #[cfg(any(windows, unix))]
     {
         let err = unsafe {
-            strerror(code)
+            strerror(_code)
         };
 
         if !err.is_null() {
             let err_len = unsafe {
-                cmp::min(out.len(), strlen(err) as usize)
+                core::cmp::min(out.len(), strlen(err) as usize)
             };
 
             let err_slice = unsafe {
@@ -127,11 +128,11 @@ pub(crate) fn message(code: libc::c_int, out: &mut MessageBuf) -> &str {
 }
 
 #[cfg(not(any(windows, unix)))]
-pub(crate) fn is_would_block(_: libc::c_int) -> bool {
+pub(crate) fn is_would_block(_: c_int) -> bool {
     false
 }
 
 #[cfg(any(windows, unix))]
-pub(crate) fn is_would_block(code: libc::c_int) -> bool {
+pub(crate) fn is_would_block(code: c_int) -> bool {
     code == libc::EWOULDBLOCK || code == libc::EAGAIN
 }

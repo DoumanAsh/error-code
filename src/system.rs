@@ -3,6 +3,7 @@ use crate::{Category, ErrorCode};
 use crate::posix::{message, is_would_block};
 #[cfg(not(windows))]
 pub(crate) use crate::posix::get_last_error;
+use crate::types::c_int;
 
 use core::ptr;
 
@@ -18,20 +19,20 @@ pub static SYSTEM_CATEGORY: Category = Category {
     is_would_block,
 };
 
-fn equivalent(code: libc::c_int, other: &ErrorCode) -> bool {
+fn equivalent(code: c_int, other: &ErrorCode) -> bool {
     ptr::eq(&SYSTEM_CATEGORY, other.category()) && code == other.raw_code()
 }
 
 #[cfg(windows)]
 #[inline]
-pub(crate) fn get_last_error() -> libc::c_int {
+pub(crate) fn get_last_error() -> c_int {
     unsafe {
-        GetLastError() as libc::c_int
+        GetLastError() as c_int
    }
 }
 
 #[cfg(windows)]
-fn message(code: libc::c_int, out: &mut crate::MessageBuf) -> &str {
+fn message(code: c_int, out: &mut crate::MessageBuf) -> &str {
     use crate::MESSAGE_BUF_SIZE;
     use core::{slice, mem};
 
@@ -91,7 +92,7 @@ fn message(code: libc::c_int, out: &mut crate::MessageBuf) -> &str {
 
 #[cfg(windows)]
 #[inline]
-fn is_would_block(code: libc::c_int) -> bool {
+fn is_would_block(code: c_int) -> bool {
     code == 10035 || crate::posix::is_would_block(code)
 }
 
@@ -99,5 +100,5 @@ fn is_would_block(code: libc::c_int) -> bool {
 extern "system" {
     fn GetLastError() -> u32;
     fn FormatMessageW(dwFlags: u32, lpSource: *const u8, dwMessageId: u32, dwLanguageId: u32, lpBuffer: *mut u16, nSize: u32, Arguments: *mut i8) -> u32;
-    fn WideCharToMultiByte(page: libc::c_uint, flags: libc::c_ulong, wide_str: *const u16, wide_str_len: libc::c_int, multi_str: *mut i8, multi_str_len: libc::c_int, default_char: *const i8, used_default_char: *mut bool) -> libc::c_int;
+    fn WideCharToMultiByte(page: crate::types::c_uint, flags: crate::types::c_ulong, wide_str: *const u16, wide_str_len: c_int, multi_str: *mut i8, multi_str_len: c_int, default_char: *const i8, used_default_char: *mut bool) -> c_int;
 }
