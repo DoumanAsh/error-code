@@ -1,7 +1,7 @@
 use crate::{Category, MessageBuf, ErrorCode};
 use crate::utils::write_message_buf;
 
-use core::{ptr, ffi, str};
+use core::{cmp, ptr, ffi, str};
 
 /// Posix error category, suitable for all environments.
 ///
@@ -108,10 +108,8 @@ pub(crate) fn message(code: ffi::c_int, out: &mut MessageBuf) -> &str {
 
         if !err.is_null() {
             let err_len = unsafe {
-                strlen(err)
+                cmp::min(out.len(), strlen(err) as usize)
             };
-
-            debug_assert!(out.len() >= err_len);
 
             let err_slice = unsafe {
                 ptr::copy_nonoverlapping(err as *const u8, out.as_mut_ptr() as *mut u8, err_len);
