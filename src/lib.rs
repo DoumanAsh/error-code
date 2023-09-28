@@ -18,7 +18,7 @@
 #[cfg(feature = "std")]
 extern crate std;
 
-use core::{ffi, mem, hash, fmt};
+use core::{mem, hash, fmt};
 
 ///Text to return when cannot map error
 pub const UNKNOWN_ERROR: &str = "Unknown error";
@@ -48,7 +48,7 @@ pub struct Category {
     ///In case of error, just write generic name.
     ///
     ///Returns formatted message as string.
-    pub message: fn(ffi::c_int, &mut MessageBuf) -> &str,
+    pub message: fn(libc::c_int, &mut MessageBuf) -> &str,
     ///Checks whether error code is equivalent to another one.
     ///
     ///## Args:
@@ -60,24 +60,24 @@ pub struct Category {
     ///
     ///Generally error code is equal if it belongs to the same category (use `ptr::eq` to compare
     ///pointers to `Category`) and raw error codes are equal.
-    pub equivalent: fn(ffi::c_int, &ErrorCode) -> bool,
+    pub equivalent: fn(libc::c_int, &ErrorCode) -> bool,
     ///Returns `true` if supplied error code indicates WouldBlock like error.
     ///
     ///This should `true` only for errors that indicate operation can be re-tried later.
-    pub is_would_block: fn(ffi::c_int) -> bool,
+    pub is_would_block: fn(libc::c_int) -> bool,
 }
 
 #[derive(Copy, Clone)]
 ///Describes error code of particular category.
 pub struct ErrorCode {
-    code: ffi::c_int,
+    code: libc::c_int,
     category: &'static Category
 }
 
 impl ErrorCode {
     #[inline]
     ///Initializes error code with provided category
-    pub const fn new(code: ffi::c_int, category: &'static Category) -> Self {
+    pub const fn new(code: libc::c_int, category: &'static Category) -> Self {
         Self {
             code,
             category,
@@ -86,13 +86,13 @@ impl ErrorCode {
 
     #[inline(always)]
     ///Creates new POSIX error code.
-    pub fn new_posix(code: ffi::c_int) -> Self {
+    pub fn new_posix(code: libc::c_int) -> Self {
         Self::new(code, &POSIX_CATEGORY)
     }
 
     #[inline(always)]
     ///Creates new System error code.
-    pub fn new_system(code: ffi::c_int) -> Self {
+    pub fn new_system(code: libc::c_int) -> Self {
         Self::new(code, &SYSTEM_CATEGORY)
     }
 
@@ -110,7 +110,7 @@ impl ErrorCode {
 
     #[inline(always)]
     ///Gets raw error code.
-    pub const fn raw_code(&self) -> ffi::c_int {
+    pub const fn raw_code(&self) -> libc::c_int {
         self.code
     }
 

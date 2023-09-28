@@ -4,7 +4,7 @@ use crate::posix::{message, is_would_block};
 #[cfg(not(windows))]
 pub(crate) use crate::posix::get_last_error;
 
-use core::{ptr, ffi};
+use core::ptr;
 
 /// System error category, suitable for all environments.
 ///
@@ -18,20 +18,20 @@ pub static SYSTEM_CATEGORY: Category = Category {
     is_would_block,
 };
 
-fn equivalent(code: ffi::c_int, other: &ErrorCode) -> bool {
+fn equivalent(code: libc::c_int, other: &ErrorCode) -> bool {
     ptr::eq(&SYSTEM_CATEGORY, other.category()) && code == other.raw_code()
 }
 
 #[cfg(windows)]
 #[inline]
-pub(crate) fn get_last_error() -> ffi::c_int {
+pub(crate) fn get_last_error() -> libc::c_int {
     unsafe {
-        GetLastError() as ffi::c_int
+        GetLastError() as libc::c_int
    }
 }
 
 #[cfg(windows)]
-fn message(code: ffi::c_int, out: &mut crate::MessageBuf) -> &str {
+fn message(code: libc::c_int, out: &mut crate::MessageBuf) -> &str {
     use crate::MESSAGE_BUF_SIZE;
     use core::{slice, mem};
 
@@ -91,7 +91,7 @@ fn message(code: ffi::c_int, out: &mut crate::MessageBuf) -> &str {
 
 #[cfg(windows)]
 #[inline]
-const fn is_would_block(code: ffi::c_int) -> bool {
+const fn is_would_block(code: libc::c_int) -> bool {
     code == 10035 || crate::posix::is_would_block(code)
 }
 
@@ -99,5 +99,5 @@ const fn is_would_block(code: ffi::c_int) -> bool {
 extern "system" {
     fn GetLastError() -> u32;
     fn FormatMessageW(dwFlags: u32, lpSource: *const u8, dwMessageId: u32, dwLanguageId: u32, lpBuffer: *mut u16, nSize: u32, Arguments: *mut i8) -> u32;
-    fn WideCharToMultiByte(page: ffi::c_uint, flags: ffi::c_ulong, wide_str: *const u16, wide_str_len: ffi::c_int, multi_str: *mut i8, multi_str_len: ffi::c_int, default_char: *const i8, used_default_char: *mut bool) -> ffi::c_int;
+    fn WideCharToMultiByte(page: libc::c_uint, flags: libc::c_ulong, wide_str: *const u16, wide_str_len: libc::c_int, multi_str: *mut i8, multi_str_len: libc::c_int, default_char: *const i8, used_default_char: *mut bool) -> libc::c_int;
 }
