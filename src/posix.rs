@@ -134,5 +134,5 @@ pub(crate) fn is_would_block(_: c_int) -> bool {
 
 #[cfg(any(windows, unix))]
 pub(crate) fn is_would_block(code: c_int) -> bool {
-    code == libc::EWOULDBLOCK || code == libc::EAGAIN
+    code == crate::defs::EWOULDBLOCK || code == crate::defs::EAGAIN
 }
