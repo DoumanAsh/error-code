@@ -75,7 +75,18 @@ pub(crate) fn get_last_error() -> c_int {
         }
     }
 
-    #[cfg(target_os = "unknown")]
+    #[cfg(target_env = "newlib")]
+    {
+        extern "C" {
+            fn __errno() -> *mut c_int;
+        }
+
+        return unsafe {
+            *(__errno())
+        }
+    }
+
+    #[cfg(all(target_os = "unknown", not(target_env = "newlib")))]
     {
         return 0;
     }

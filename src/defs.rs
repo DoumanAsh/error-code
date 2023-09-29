@@ -1,5 +1,6 @@
 //! Definitions used by this library
 
+#[allow(unused)]
 use crate::types::c_int;
 
 #[cfg(any(target_env = "wasi", target_os = "wasi"))]
