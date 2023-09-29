@@ -1,6 +1,6 @@
 //! Error code library provides generic errno/winapi error wrapper
 //!
-//! Use can define own `Category` if you want to create new error wrapper.
+//! User can define own `Category` if you want to create new error wrapper.
 //!
 //! ## Usage
 //!
