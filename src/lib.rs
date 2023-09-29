@@ -31,7 +31,7 @@ const MESSAGE_BUF_SIZE: usize = 256;
 ///Type alias for buffer to hold error code description.
 pub type MessageBuf = [mem::MaybeUninit<u8>; MESSAGE_BUF_SIZE];
 
-mod types;
+pub mod types;
 mod utils;
 mod posix;
 pub use posix::POSIX_CATEGORY;
