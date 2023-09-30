@@ -1,6 +1,6 @@
 //! Error code library provides generic errno/winapi error wrapper
 //!
-//! User can define own `Category` if you want to create new error wrapper.
+//! User can define own [Category](struct.Category.html) if you want to create new error wrapper.
 //!
 //! ## Usage
 //!
@@ -42,6 +42,49 @@ pub use system::SYSTEM_CATEGORY;
 ///Interface for error category
 ///
 ///It is implemented as pointers in order to avoid generics or overhead of fat pointers.
+///
+///## Custom implementation example
+///
+///```rust
+///use error_code::{ErrorCode, Category};
+///use error_code::types::c_int;
+///
+///use core::ptr;
+///
+///static MY_CATEGORY: Category = Category {
+///    name: "MyError",
+///    message,
+///    equivalent,
+///    is_would_block
+///};
+///
+///fn equivalent(code: c_int, other: &ErrorCode) -> bool {
+///    ptr::eq(&MY_CATEGORY, other.category()) && code == other.raw_code()
+///}
+///
+///fn is_would_block(_: c_int) -> bool {
+///    false
+///}
+///
+///fn message(code: c_int, out: &mut error_code::MessageBuf) -> &str {
+///    let msg = match code {
+///        0 => "Success",
+///        1 => "Bad",
+///        _ => "Whatever",
+///    };
+///
+///    debug_assert!(msg.len() <= out.len());
+///    unsafe {
+///        ptr::copy_nonoverlapping(msg.as_ptr(), out.as_mut_ptr() as *mut u8, msg.len())
+///    }
+///    msg
+///}
+///
+///#[inline(always)]
+///pub fn my_error(code: c_int) -> ErrorCode {
+///    ErrorCode::new(code, &MY_CATEGORY)
+///}
+///```
 pub struct Category {
     ///Category name
     pub name: &'static str,
