@@ -1,6 +1,25 @@
-use error_code::ErrorCode;
+use error_code::{ErrorCode, defs};
 
 use core::mem;
+
+#[test]
+fn check_would_block() {
+    let mut error = ErrorCode::new_posix(defs::EAGAIN);
+    assert!(error.is_would_block());
+    error = ErrorCode::new_posix(defs::EWOULDBLOCK);
+    assert!(error.is_would_block());
+
+    error = ErrorCode::new_system(defs::EAGAIN);
+    assert!(error.is_would_block());
+    error = ErrorCode::new_system(defs::EWOULDBLOCK);
+    assert!(error.is_would_block());
+
+    #[cfg(windows)]
+    {
+        error = ErrorCode::new_system(10035);
+        assert!(error.is_would_block());
+    }
+}
 
 #[cfg(target_pointer_width = "64")]
 #[test]
@@ -36,5 +55,19 @@ fn check_error_code_range() {
 
         let error = ErrorCode::new_system(code);
         eprintln!("{:?}", error.to_string());
+
+        if code == defs::EWOULDBLOCK || code == defs::EAGAIN {
+            assert!(error.is_would_block());
+        } else {
+            #[cfg(windows)]
+            if code == 10035 {
+                assert!(error.is_would_block());
+            } else {
+                assert!(!error.is_would_block());
+            }
+
+            #[cfg(not(windows))]
+            assert!(!error.is_would_block());
+        }
     }
 }
