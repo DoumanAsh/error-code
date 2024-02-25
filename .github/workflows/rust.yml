@@ -2,6 +2,7 @@ name: Rust
 
 env:
   rust_version: "stable"
+  min_rust_version: "1.36.0"
 
 on:
   push:
@@ -23,8 +24,49 @@ on:
       - 'Cargo.toml'
 
 jobs:
-  build:
+  min-rust-check:
+    runs-on: ${{ matrix.os }}
 
+    strategy:
+      matrix:
+        # Mac OS broke old rustc so do not check on it
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust Unix
+      if: runner.os != 'Windows'
+      run: |
+        if rustup --version >/dev/null 2>&1; then
+            rustup install ${{ env.min_rust_version }}
+            rustup default ${{ env.min_rust_version }}
+        else
+            curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain ${{ env.min_rust_version }}
+            echo ::add-path::$HOME/.cargo/bin
+        fi
+    - name: Install Rust Windows
+      if: runner.os == 'Windows'
+      run: |
+        if (Get-Command "rustup" -ErrorAction SilentlyContinue) {
+            rustup install ${{ env.min_rust_version }}
+            rustup default ${{ env.min_rust_version }}
+        } else {
+            Invoke-WebRequest https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe -OutFile rustup-init.exe
+            ./rustup-init.exe -y --profile minimal --default-toolchain ${{ env.min_rust_version }}
+            echo ::add-path::%USERPROFILE%\.cargo\bin
+        }
+
+    - name: Rust version
+      run: |
+        cargo --version
+        rustc --version
+
+    - name: Check
+      run: |
+        cargo check
+
+  test:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -80,3 +122,34 @@ jobs:
       env:
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER: "valgrind --leak-check=full --error-exitcode=1"
       run: cargo test --release
+
+  wasm-platform-test:
+    needs: test
+    runs-on: ubuntu-latest
+    container: ghcr.io/webassembly/wasi-sdk
+    if: github.event.pull_request.draft == false
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install system packages
+      run: apt-get update && apt-get install -y curl xz-utils
+
+    - name: Install Rust Unix
+      run: |
+        if rustup --version >/dev/null 2>&1; then
+            rustup update
+        else
+             curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain stable
+             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        fi
+
+    - name: Install Wasi runtime
+      run: |
+        curl -L https://github.com/bytecodealliance/wasmtime/releases/download/v17.0.1/wasmtime-v17.0.1-x86_64-linux.tar.xz > wasmtime.tar.xz
+        mkdir $HOME/wasmtime
+        tar -xf wasmtime.tar.xz -C $HOME/wasmtime --strip-components 1
+        echo "$HOME/wasmtime/" >> $GITHUB_PATH
+        cargo install cargo-wasi
+
+    - name: Test
+      run: cargo wasi test
