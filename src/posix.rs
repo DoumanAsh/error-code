@@ -31,7 +31,8 @@ pub(crate) fn get_last_error() -> c_int {
                 target_os = "fuchsia",
                 target_os = "l4re",
                 target_os = "hurd",
-                target_os = "teeos"
+                target_os = "teeos",
+                target_os = "wasi"
             ),
             link_name = "__errno_location"
         )]
@@ -68,8 +69,9 @@ pub(crate) fn get_last_error() -> c_int {
     }
 }
 
-#[cfg(any(target_os = "cloudabi", target_os = "wasi", target_os = "dragonfly"))]
+#[cfg(any(target_os = "cloudabi", target_os = "dragonfly"))]
 pub(crate) fn get_last_error() -> c_int {
+    //WASI implements it as thread local, but thread local are not stable :(
     extern {
         #[thread_local]
         static errno: c_int;
