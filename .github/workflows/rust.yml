@@ -9,8 +9,8 @@ on:
       - master
     paths:
       - '.github/workflows/rust.yml'
-      - 'src/**.rs'
-      - 'tests/**'
+      - 'src/**/*.rs'
+      - 'tests/**/*.rs'
       - 'Cargo.toml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -18,8 +18,8 @@ on:
       - '**'
     paths:
       - '.github/workflows/rust.yml'
-      - 'src/**.rs'
-      - 'tests/**'
+      - 'src/**/*.rs'
+      - 'tests/**/*.rs'
       - 'Cargo.toml'
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
         os: [macos-latest, windows-latest, ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
 
     - name: Install Rust Unix
       if: runner.os != 'Windows'
