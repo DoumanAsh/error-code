@@ -21,30 +21,44 @@ fn equivalent(code: c_int, other: &ErrorCode) -> bool {
 pub(crate) fn get_last_error() -> c_int {
     #[cfg(not(any(target_os = "wasi", target_os = "cloudabi", target_os = "unknown")))]
     {
+        //Reference:
+        //https://github.com/rust-lang/rust/blob/2ae1bb671183a072b54ed8ed39abfcd72990a3e7/library/std/src/sys/pal/unix/os.rs#L42
         extern {
-            #[cfg(not(target_os = "dragonfly"))]
-            #[cfg_attr(any(target_os = "macos", target_os = "ios", target_os = "freebsd"), link_name = "__error")]
+            #[cfg(not(any(target_os = "dragonfly", target_os = "vxworks")))]
             #[cfg_attr(
                 any(
-                    target_os = "openbsd",
+                    target_os = "linux",
+                    target_os = "emscripten",
+                    target_os = "fuchsia",
+                    target_os = "l4re",
+                    target_os = "hurd",
+                ),
+                link_name = "__errno_location"
+            )]
+            #[cfg_attr(
+                any(
                     target_os = "netbsd",
-                    target_os = "bitrig",
+                    target_os = "openbsd",
                     target_os = "android",
-                    target_os = "espidf"
+                    target_os = "redox",
+                    target_env = "newlib"
                 ),
                 link_name = "__errno"
             )]
+            #[cfg_attr(any(target_os = "solaris", target_os = "illumos"), link_name = "___errno")]
+            #[cfg_attr(target_os = "nto", link_name = "__get_errno_ptr")]
             #[cfg_attr(
-                any(target_os = "solaris", target_os = "illumos"),
-                link_name = "___errno"
+                any(
+                    target_os = "macos",
+                    target_os = "ios",
+                    target_os = "tvos",
+                    target_os = "freebsd",
+                    target_os = "watchos"
+                ),
+                link_name = "__error"
             )]
             #[cfg_attr(target_os = "haiku", link_name = "_errnop")]
-            #[cfg_attr(
-                any(target_os = "linux", target_os = "hurd", target_os = "redox"),
-                link_name = "__errno_location"
-            )]
             #[cfg_attr(target_os = "aix", link_name = "_Errno")]
-            #[cfg_attr(target_os = "nto", link_name = "__get_errno_ptr")]
             #[cfg_attr(target_os = "windows", link_name = "_errno")]
             fn errno_location() -> *mut c_int;
         }
