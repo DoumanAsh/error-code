@@ -67,7 +67,7 @@ fn message(code: c_int, out: &mut crate::MessageBuf) -> &str {
     match res {
         0 => match get_last_error() {
             122 => crate::utils::write_message_buf(out, "<Truncated>"),
-            _ => crate::utils::write_message_buf(out, crate::FAIL_ERROR_FORMAT),
+            _ => crate::utils::write_fallback_code(out, code),
         }
         len => {
             let out = unsafe {

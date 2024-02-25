@@ -1,7 +1,5 @@
 use error_code::{ErrorCode, defs};
 
-use core::mem;
-
 #[test]
 fn check_would_block() {
     let mut error = ErrorCode::new_posix(defs::EAGAIN);
@@ -26,7 +24,7 @@ fn check_would_block() {
 fn size_check_64bit() {
     //On 64bit we suffer from alignment, but Rust optimizes enums quite well so ErrorCode benefits
     //of this optimization, letting its padding to be consumed by Result
-    assert_eq!(mem::size_of::<ErrorCode>(), 16);
+    assert_eq!(core::mem::size_of::<ErrorCode>(), 16);
     //This optimization is enabled in latest rust compiler
     //assert_eq!(mem::size_of::<Result<bool, ErrorCode>>(), 16);
 }

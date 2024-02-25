@@ -1,5 +1,5 @@
 use crate::{Category, MessageBuf, ErrorCode};
-use crate::utils::write_message_buf;
+use crate::utils::write_fallback_code;
 use crate::types::c_int;
 
 use core::{ptr, str};
@@ -97,7 +97,7 @@ pub(crate) fn get_last_error() -> c_int {
 }
 
 pub(crate) fn message(_code: c_int, out: &mut MessageBuf) -> &str {
-    #[cfg(any(windows, all(unix, not(target_env = "gnu"))))]
+    #[cfg(any(windows, target_os = "wasi", all(unix, not(target_env = "gnu"))))]
     extern "C" {
         ///Only GNU impl is thread unsafe
         fn strerror(code: c_int) -> *const i8;
@@ -116,7 +116,7 @@ pub(crate) fn message(_code: c_int, out: &mut MessageBuf) -> &str {
         strerror_l(code, ptr::null_mut())
     }
 
-    #[cfg(any(windows, unix))]
+    #[cfg(any(windows, unix, target_os = "wasi"))]
     {
         let err = unsafe {
             strerror(_code)
@@ -132,22 +132,21 @@ pub(crate) fn message(_code: c_int, out: &mut MessageBuf) -> &str {
                 core::slice::from_raw_parts(out.as_ptr() as *const u8, err_len)
             };
 
-            match str::from_utf8(err_slice) {
-                Ok(msg) => return msg,
-                Err(_) => return write_message_buf(out, crate::FAIL_ERROR_FORMAT),
-            };
+            if let Ok(msg) = str::from_utf8(err_slice) {
+                return msg
+            }
         }
     }
 
-    write_message_buf(out, crate::UNKNOWN_ERROR)
+    write_fallback_code(out, _code)
 }
 
-#[cfg(not(any(windows, unix)))]
+#[cfg(not(any(windows, unix, target_os = "wasi")))]
 pub(crate) fn is_would_block(_: c_int) -> bool {
     false
 }
 
-#[cfg(any(windows, unix))]
+#[cfg(any(windows, unix, target_os = "wasi"))]
 pub(crate) fn is_would_block(code: c_int) -> bool {
     code == crate::defs::EWOULDBLOCK || code == crate::defs::EAGAIN
 }

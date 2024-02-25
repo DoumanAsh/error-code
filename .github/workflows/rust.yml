@@ -152,7 +152,9 @@ jobs:
         cargo install cargo-wasi
 
     - name: Test
-      run: cargo wasi test
+      env:
+        RUST_TEST_THREADS: "1"
+      run: cargo wasi test -- --nocapture
 
   cross-platform-test:
     needs: test
