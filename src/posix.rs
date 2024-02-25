@@ -18,7 +18,7 @@ fn equivalent(code: c_int, other: &ErrorCode) -> bool {
     ptr::eq(&POSIX_CATEGORY, other.category()) && code == other.raw_code()
 }
 
-#[cfg(not(any(target_os = "wasi", target_os = "cloudabi", target_os = "unknown")))]
+#[cfg(not(any(target_os = "cloudabi", target_os = "unknown")))]
 pub(crate) fn get_last_error() -> c_int {
     //Reference:
     //https://github.com/rust-lang/rust/blob/2ae1bb671183a072b54ed8ed39abfcd72990a3e7/library/std/src/sys/pal/unix/os.rs#L42
