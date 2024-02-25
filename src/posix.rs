@@ -32,6 +32,7 @@ pub(crate) fn get_last_error() -> c_int {
                     target_os = "fuchsia",
                     target_os = "l4re",
                     target_os = "hurd",
+                    target_os = "teeos"
                 ),
                 link_name = "__errno_location"
             )]
@@ -68,7 +69,7 @@ pub(crate) fn get_last_error() -> c_int {
         }
     }
 
-    #[cfg(any(target_os = "cloudabi", target_os = "wasi"))]
+    #[cfg(any(target_os = "cloudabi", target_os = "wasi", target_os = "dragonfly"))]
     {
         extern {
             #[thread_local]
@@ -86,17 +87,6 @@ pub(crate) fn get_last_error() -> c_int {
 
         return unsafe {
             errnoGet();
-        }
-    }
-
-    #[cfg(target_env = "newlib")]
-    {
-        extern "C" {
-            fn __errno() -> *mut c_int;
-        }
-
-        return unsafe {
-            *(__errno())
         }
     }
 
