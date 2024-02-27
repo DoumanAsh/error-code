@@ -22,6 +22,7 @@ extern crate std;
 
 use core::{mem, hash, fmt};
 
+#[deprecated]
 ///Text to return when cannot map error
 pub const UNKNOWN_ERROR: &str = "Unknown error";
 ///Text to return when error fails to be converted into utf-8
