@@ -1,9 +1,10 @@
+//!Error code utilities
 use crate::types::c_int;
 use crate::MessageBuf;
 
 use core::{fmt, ptr, slice, cmp};
 
-pub struct FmtCursor<'a> {
+pub(crate) struct FmtCursor<'a> {
     buf: &'a mut MessageBuf,
     cursor: usize
 }
@@ -43,15 +44,21 @@ pub(crate) fn write_message_buf<'a>(out: &'a mut MessageBuf, text: &str) -> &'a 
     formatter.as_str()
 }
 
-pub(crate) fn write_fallback_code<'a>(out: &'a mut MessageBuf, code: c_int) -> &'a str {
+#[inline(always)]
+///Maps error code
+pub fn generic_map_error_code(code: c_int) -> &'static str {
+    match code {
+        0 => "Success",
+        _ => "Operation failed",
+    }
+}
+
+pub(crate) fn write_fallback_code(out: &mut MessageBuf, code: c_int) -> &str {
     let mut formatter = FmtCursor {
         buf: out,
         cursor: 0,
     };
 
-    let _ = match code {
-        0 => fmt::Write::write_str(&mut formatter, "Success"),
-        _ => fmt::Write::write_str(&mut formatter, "Operation failed"),
-    };
+    let _ = fmt::Write::write_str(&mut formatter, generic_map_error_code(code));
     formatter.as_str()
 }

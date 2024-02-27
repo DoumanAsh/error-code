@@ -27,17 +27,147 @@ pub const UNKNOWN_ERROR: &str = "Unknown error";
 ///Text to return when error fails to be converted into utf-8
 pub const FAIL_ERROR_FORMAT: &str = "Failed to format error into utf-8";
 
-const MESSAGE_BUF_SIZE: usize = 256;
+///Error message buffer size
+pub const MESSAGE_BUF_SIZE: usize = 256;
 ///Type alias for buffer to hold error code description.
 pub type MessageBuf = [mem::MaybeUninit<u8>; MESSAGE_BUF_SIZE];
 
 pub mod defs;
 pub mod types;
-mod utils;
+pub mod utils;
 mod posix;
 pub use posix::POSIX_CATEGORY;
 mod system;
 pub use system::SYSTEM_CATEGORY;
+
+#[macro_export]
+///Defines error code `Category` as enum which implements conversion into generic ErrorCode
+///
+///This enum shall implement following traits:
+///
+///- `Clone`
+///- `Copy`
+///- `Debug`
+///- `Display` - uses `ErrorCode` `fmt::Display`
+///- `PartialEq` / `Eq`
+///- `PartialOrd` / `Ord`
+///
+///# Usage
+///
+///```
+///use error_code::{define_category, ErrorCode};
+///
+///define_category!(
+///    ///This is documentation for my error
+///    ///
+///    ///Documentation of variants only allow 1 line comment and it should be within 256 characters
+///    pub enum MyError {
+///        ///Success
+///        Success = 0,
+///        ///This is bad
+///        Error = 1,
+///    }
+///);
+///
+///fn handle_error(res: Result<(), MyError>) -> Result<(), ErrorCode> {
+///    res?;
+///    Ok(())
+///}
+///
+///let error = handle_error(Err(MyError::Error)).expect_err("Should return error");
+///assert_eq!(error.to_string(), "MyError(1): This is bad");
+///assert_eq!(error.to_string(), MyError::Error.to_string());
+///```
+macro_rules! define_category {
+    (
+        $(#[$docs:meta])*
+        pub enum $name:ident {
+            $(
+                #[doc = $msg:literal]
+                $ident:ident = $code:literal,
+             )+
+        }
+    ) => {
+        #[derive(Copy, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+        #[repr(i32)]
+        $(#[$docs])*
+        pub enum $name {
+            $(
+                #[doc = $msg]
+                $ident = $code,
+            )+
+        }
+
+        impl From<$name> for $crate::ErrorCode {
+            #[inline(always)]
+            fn from(this: $name) -> $crate::ErrorCode {
+                this.into_error_code()
+            }
+        }
+
+        impl core::fmt::Display for $name {
+            #[inline(always)]
+            fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+                core::fmt::Display::fmt(&self.into_error_code(), fmt)
+            }
+        }
+
+        impl $name {
+            const _ASSERT: () = {
+                $(
+                    assert!($msg.len() <= $crate::MESSAGE_BUF_SIZE, "Message buffer overflow, make sure your messages are not beyond MESSAGE_BUF_SIZE");
+                )+
+            };
+
+
+            #[inline(always)]
+            ///Map raw error code to textual representation.
+            pub fn map_code(code: $crate::types::c_int) -> Option<&'static str> {
+                match code {
+                    $($code => Some($msg),)+
+                    _ => None,
+                }
+            }
+
+            fn message(code: $crate::types::c_int, out: &mut $crate::MessageBuf) -> &str {
+                let msg = match Self::map_code(code) {
+                    Some(msg) => msg,
+                    None => $crate::utils::generic_map_error_code(code),
+                };
+
+                debug_assert!(msg.len() <= out.len());
+                unsafe {
+                    core::ptr::copy_nonoverlapping(msg.as_ptr(), out.as_mut_ptr() as *mut u8, msg.len());
+                    core::str::from_utf8_unchecked(
+                        core::slice::from_raw_parts(out.as_ptr() as *const u8, msg.len())
+                    )
+                }
+            }
+
+            ///Converts into error code
+            pub fn into_error_code(self) -> $crate::ErrorCode {
+                let _ = Self::_ASSERT;
+
+                static CATEGORY: $crate::Category = $crate::Category {
+                    name: core::stringify!($name),
+                    message: $name::message,
+                    equivalent,
+                    is_would_block
+                };
+
+                fn equivalent(code: $crate::types::c_int, other: &$crate::ErrorCode) -> bool {
+                    core::ptr::eq(&CATEGORY, other.category()) && code == other.raw_code()
+                }
+
+                fn is_would_block(_: $crate::types::c_int) -> bool {
+                    false
+                }
+
+                $crate::ErrorCode::new(self as _, &CATEGORY)
+            }
+        }
+    }
+}
 
 ///Interface for error category
 ///
