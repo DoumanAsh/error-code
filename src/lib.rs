@@ -324,7 +324,9 @@ impl hash::Hash for ErrorCode {
 impl fmt::Debug for ErrorCode {
     #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_fmt(format_args!("{}({})", self.category.name, self.code))
+        let mut out = [mem::MaybeUninit::uninit(); MESSAGE_BUF_SIZE];
+        let message = (self.category.message)(self.code, &mut out);
+        fmt.debug_struct(self.category.name).field("code", &self.code).field("message", &message).finish()
     }
 }
 
@@ -332,9 +334,7 @@ impl fmt::Display for ErrorCode {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut out = [mem::MaybeUninit::uninit(); MESSAGE_BUF_SIZE];
         let message = (self.category.message)(self.code, &mut out);
-        fmt::Debug::fmt(self, fmt)?;
-        fmt.write_str(": ")?;
-        fmt.write_str(message)
+        fmt.write_fmt(format_args!("{}({}): {message}", self.category.name, self.code))
     }
 }
 
