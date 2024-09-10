@@ -334,7 +334,7 @@ impl fmt::Display for ErrorCode {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut out = [mem::MaybeUninit::uninit(); MESSAGE_BUF_SIZE];
         let message = (self.category.message)(self.code, &mut out);
-        fmt.write_fmt(format_args!("{}({}): {message}", self.category.name, self.code))
+        fmt.write_fmt(format_args!("{}({}): {}", self.category.name, self.code, message))
     }
 }
 
