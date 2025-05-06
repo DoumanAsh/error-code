@@ -10,7 +10,8 @@ readme = "README.md"
 include = [
     "**/*.rs",
     "Cargo.toml",
-    "README.md"
+    "README.md",
+    "LICENSE"
 ]
 
 [features]
