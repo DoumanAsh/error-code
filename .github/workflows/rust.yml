@@ -149,7 +149,7 @@ jobs:
         mkdir $HOME/wasmtime
         tar -xf wasmtime.tar.xz -C $HOME/wasmtime --strip-components 1
         echo "$HOME/wasmtime/" >> $GITHUB_PATH
-        cargo install cargo-wasi
+        cargo install cargo-component
 
     - name: Test
       env:

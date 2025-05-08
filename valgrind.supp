@@ -15,3 +15,10 @@
    fun:*rt*lang_start_internal*
    fun:main
 }
+{
+   rust_compiler_leak_error_on_panic_in_rt_optimized2
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:*rt*lang_start_internal*
+}
