@@ -13,6 +13,7 @@ on:
       - 'src/**/*.rs'
       - 'tests/**/*.rs'
       - 'Cargo.toml'
+      - 'valgrind.supp'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -22,6 +23,7 @@ on:
       - 'src/**/*.rs'
       - 'tests/**/*.rs'
       - 'Cargo.toml'
+      - 'valgrind.supp'
 
 jobs:
   min-rust-check:
