@@ -1,9 +1,5 @@
 name: Rust
 
-env:
-  rust_version: "stable"
-  min_rust_version: "1.36.0"
-
 on:
   push:
     branches:
@@ -26,141 +22,26 @@ on:
       - 'valgrind.supp'
 
 jobs:
-  min-rust-check:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        # Mac OS broke old rustc so do not check on it
-        os: [windows-latest, ubuntu-latest]
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust Unix
-      if: runner.os != 'Windows'
-      run: |
-        if rustup --version >/dev/null 2>&1; then
-            rustup install ${{ env.min_rust_version }}
-            rustup default ${{ env.min_rust_version }}
-        else
-            curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain ${{ env.min_rust_version }}
-            echo ::add-path::$HOME/.cargo/bin
-        fi
-    - name: Install Rust Windows
-      if: runner.os == 'Windows'
-      run: |
-        if (Get-Command "rustup" -ErrorAction SilentlyContinue) {
-            rustup install ${{ env.min_rust_version }}
-            rustup default ${{ env.min_rust_version }}
-        } else {
-            Invoke-WebRequest https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe -OutFile rustup-init.exe
-            ./rustup-init.exe -y --profile minimal --default-toolchain ${{ env.min_rust_version }}
-            echo ::add-path::%USERPROFILE%\.cargo\bin
-        }
-
-    - name: Rust version
-      run: |
-        cargo --version
-        rustc --version
-
-    - name: Check
-      run: |
-        cargo check
-
-  test:
-    runs-on: ${{ matrix.os }}
-
+  check:
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust Unix
-      if: runner.os != 'Windows'
-      run: |
-        if rustup --version >/dev/null 2>&1; then
-            rustup install ${{ env.rust_version }}
-            rustup default ${{ env.rust_version }}
-        else
-            curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain ${{ env.rust_version }}
-            echo ::add-path::$HOME/.cargo/bin
-        fi
-    - name: Install Rust Windows
-      if: runner.os == 'Windows'
-      run: |
-        if (Get-Command "rustup" -ErrorAction SilentlyContinue) {
-            rustup install ${{ env.rust_version }}
-            rustup default ${{ env.rust_version }}
-        } else {
-            Invoke-WebRequest https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe -OutFile rustup-init.exe
-            ./rustup-init.exe -y --profile minimal --default-toolchain ${{ env.rust_version }}
-            echo ::add-path::%USERPROFILE%\.cargo\bin
-        }
-
-    - name: Rust version
-      run: |
-        cargo --version
-        rustc --version
-
-    - name: Install Valgrind
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y valgrind
-
-    - name: Check WASM
-      run: |
-        rustup target add wasm32-unknown-unknown
-        cargo check --target wasm32-unknown-unknown
-
-    - name: Test
-      run: cargo test --tests
-
-    - name: Valgrind Test
-      if: runner.os == 'Linux'
-      env:
-        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER: "valgrind --leak-check=full --error-exitcode=1 --suppressions=valgrind.supp"
-      run: cargo test --release
+    if: github.event.pull_request.draft == false
+    uses: DoumanAsh/douman-ci/.github/workflows/rust.yml@master
+    with:
+      runs-on: ${{ matrix.os }}
+      cargo-no-features: true
+      cargo-features: "std"
+      valgrind: true
+      valgrind_flags: "--suppressions=valgrind.supp"
 
   wasm-platform-test:
-    needs: test
-    runs-on: ubuntu-latest
-    container: ghcr.io/webassembly/wasi-sdk
+    needs: [check]
     if: github.event.pull_request.draft == false
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install system packages
-      run: apt-get update && apt-get install -y curl xz-utils
-
-    - name: Install Rust Unix
-      run: |
-        if rustup --version >/dev/null 2>&1; then
-            rustup update
-        else
-             curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain stable
-             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-        fi
-
-    - name: Install Wasi runtime
-      run: |
-        curl -L https://github.com/bytecodealliance/wasmtime/releases/download/v17.0.1/wasmtime-v17.0.1-x86_64-linux.tar.xz > wasmtime.tar.xz
-        mkdir $HOME/wasmtime
-        tar -xf wasmtime.tar.xz -C $HOME/wasmtime --strip-components 1
-        echo "$HOME/wasmtime/" >> $GITHUB_PATH
-        cargo install cargo-component
-
-    - name: Test
-      env:
-        RUST_TEST_THREADS: "1"
-      run: cargo wasi test -- --nocapture
+    uses: DoumanAsh/douman-ci/.github/workflows/wasm-rust.yml@master
 
   cross-platform-test:
-    needs: test
-    runs-on: ubuntu-latest
+    needs: [check]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -169,25 +50,11 @@ jobs:
           "i586-unknown-linux-musl",
           "powerpc-unknown-linux-gnu",
           "aarch64-unknown-linux-musl",
-          "aarch64-linux-android",
+          # Current cross cannot link libunwind
+          # https://github.com/cross-rs/cross/issues/1222
+          #"aarch64-linux-android",
         ]
 
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust Unix
-      run: |
-        if rustup --version >/dev/null 2>&1; then
-            rustup update
-        else
-             curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain stable
-             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-        fi
-
-    - name: Install Cross
-      run: |
-        curl -L https://github.com/cross-rs/cross/releases/download/v0.2.5/cross-x86_64-unknown-linux-musl.tar.gz | tar xfz -
-        cp cross $HOME/.cargo/bin
-
-    - name: Test ${{ matrix.target }}
-      run: cross build
+    uses: DoumanAsh/douman-ci/.github/workflows/cross-rust.yml@master
+    with:
+      cargo-target: ${{ matrix.target }}

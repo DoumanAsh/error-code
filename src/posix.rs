@@ -22,7 +22,7 @@ fn equivalent(code: c_int, other: &ErrorCode) -> bool {
 pub(crate) fn get_last_error() -> c_int {
     //Reference:
     //https://github.com/rust-lang/rust/blob/2ae1bb671183a072b54ed8ed39abfcd72990a3e7/library/std/src/sys/pal/unix/os.rs#L42
-    extern {
+    extern "C" {
         #[cfg(not(any(target_os = "dragonfly", target_os = "vxworks")))]
         #[cfg_attr(
             any(
@@ -72,7 +72,7 @@ pub(crate) fn get_last_error() -> c_int {
 #[cfg(any(target_os = "cloudabi", target_os = "dragonfly"))]
 pub(crate) fn get_last_error() -> c_int {
     //WASI implements it as thread local, but thread local are not stable :(
-    extern {
+    extern "C" {
         #[thread_local]
         static errno: c_int;
     }
