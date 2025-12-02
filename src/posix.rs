@@ -91,6 +91,18 @@ pub(crate) fn get_last_error() -> c_int {
     }
 }
 
+#[cfg(target_os = "hermit")]
+pub(crate) fn get_last_error() -> c_int {
+    extern "C" {
+        #[link_name = "sys_get_errno"]
+        pub fn get_errno() -> c_int;
+    }
+
+    unsafe {
+        get_errno()
+    }
+}
+
 #[cfg(all(target_os = "unknown", not(target_env = "newlib")))]
 pub(crate) fn get_last_error() -> c_int {
     0
