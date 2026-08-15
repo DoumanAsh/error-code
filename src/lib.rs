@@ -2,6 +2,10 @@
 //!
 //! User can define own [Category](struct.Category.html) if you want to create new error wrapper.
 //!
+//! ## Features
+//!
+//! - `std` - Enables `std::error::Error` implementation and conversion from `std::io::Error`
+//!
 //! ## Usage
 //!
 //! ```rust
@@ -32,6 +36,8 @@ pub const FAIL_ERROR_FORMAT: &str = "Failed to format error into utf-8";
 pub const MESSAGE_BUF_SIZE: usize = 256;
 ///Type alias for buffer to hold error code description.
 pub type MessageBuf = [mem::MaybeUninit<u8>; MESSAGE_BUF_SIZE];
+///Type alias for Result with `ErrorCode` as error variant by default
+pub type Result<T, E = ErrorCode> = core::result::Result<T, E>;
 
 pub mod defs;
 pub mod types;

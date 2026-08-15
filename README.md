@@ -8,6 +8,10 @@ Error code library provides generic errno/winapi error wrapper
 
 User can define own `Category` if you want to create new error wrapper.
 
+## Features
+
+- `std` - Enables `std::error::Error` implementation and conversion from `std::io::Error`
+
 ## Usage
 
 ```rust
